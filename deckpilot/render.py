@@ -1,26 +1,4 @@
-"""
- ██████╗ ███████╗ ██████╗██╗  ██╗██████╗ ██╗      ██████╗ ██╗████████╗
-██╔════╝ ██╔════╝██╔════╝██║  ██║██╔══██╗██║     ██╔═══██╗██║╚══██╔══╝
-██║  ███╗█████╗  ██║     ███████║██║  ██║██║     ██║   ██║██║   ██║
-██║   ██║██╔══╝  ██║     ██╔══██║██║  ██║██║     ██║   ██║██║   ██║
-╚██████╔╝███████╗╚██████╗██║  ██║██████╔╝███████╗╚██████╔╝██║   ██║
- ╚═════╝ ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═════╝ ╚══════╝ ╚═════╝ ╚═╝   ╚═╝
 
-DeckPilot - A customizable interface for your Stream Deck.
-Licensed under the GNU General Public License v3.0
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
-"""
 
 # Imports
 import logging
@@ -53,19 +31,16 @@ def render_panel(deck, panel_node):
     # Assign items to keys
     for i in range(min(len(items), key_count)):
         name, data = items[i]
-        print(f"Name: {name}")
-        print(f"Data: {data}")
+
         # It's a button
         if isinstance(data, tuple):  # It's a button
             script_path, icon = data
-        else:  # It's a sub-panel
+        else:
             script_path, icon = None, data.icon
         # end if
 
         # Convert image to Stream Deck format
         if icon:
-            print(f"Deck: {deck}")
-            print(f"Icon: {icon}")
             image = PILHelper.create_scaled_image(deck, icon, margins=[5, 5, 5, 5])
             key_image = PILHelper.to_native_format(deck, image)
         else:

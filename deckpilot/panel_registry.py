@@ -59,9 +59,30 @@ class PanelNode:
         self.buttons = {}  # {button_name: button_path}
         self.sub_panels = {}  # {sub_panel_name: PanelNode}
         self.icon = self._load_icon()
+        self.active = False
     # end __init__
 
     # region PUBLIC METHODS
+
+    # Get active panel
+    def get_active_panel(self):
+        """
+        Retrieves the active panel.
+
+        Returns:
+            PanelNode: The active panel.
+        """
+        if self.active:
+            return self
+        else:
+            for sub_panel in self.sub_panels.values():
+                panel = sub_panel.get_active_panel()
+                if panel:
+                    return panel
+                # end if
+            # end for
+        # end if
+    # end get_active_panel
 
     # Add button
     def add_button(
@@ -108,7 +129,7 @@ class PanelNode:
         """
         icon_path = os.path.join(self.path, f"{self.name}.png")
         if os.path.exists(icon_path):
-            return icon_path
+            return self._load_image(icon_path)
         # end if
         return None
     # end _load_icon
@@ -135,6 +156,21 @@ class PanelNode:
 
     # endregion PRIVATE METHODS
 
+    # region EVENTS
+
+    # On key change
+    def on_key_change(self, key_index):
+        """
+        Event handler for the "key_change" event.
+
+        Args:
+            key_index (int): Index of the key that was pressed.
+        """
+        logging.info(f"Key {key_index} pressed in panel {self.name}")
+    # end on_key_change
+
+    # endregion EVENTS
+
 # end PanelNode
 
 
@@ -144,18 +180,33 @@ class PanelRegistry:
     # Constructor
     def __init__(
             self,
-            base_path
+            base_path,
+            event_bus,
+            deck_renderer
     ):
         """
         Constructor for the PanelRegistry class.
 
         Args:
             base_path (str): Path to the directory where the buttons and sub-panels are stored.
+            event_bus (EventBus): Event bus for the application.
+            deck_renderer (DeckRenderer): Deck renderer instance.
         """
+        self._event_bus = event_bus
         self.base_path = base_path
         self.root = PanelNode("root", base_path)
         self.load_panel(self.root)
+        self._deck_renderer = deck_renderer
+
+        # Dynamic mapping of keys to panels
+        self._active_panel = self.root
+        self._active_panel_map = {}
+
+        # Subscribe to the "panel_change" event
+        self._event_bus.subscribe("key_change", self._on_key_change)
     # end __init__
+
+    # region PUBLIC METHODS
 
     # Load panel
     def load_panel(
@@ -241,6 +292,35 @@ class PanelRegistry:
             self.print_structure(sub_panel, indent + 1)
         # end for
     # end print_structure
+
+    # endregion PUBLIC METHODS
+
+    # region PRIVATE METHODS
+
+    # Get active panel
+    def _get_active_panel(self):
+        """
+        Retrieves the active panel.
+        """
+        return self.root.get_active_panel()
+    # end _get_active_panel
+
+    # endregion PRIVATE METHODS
+
+    # region EVENTS
+
+    # On key change
+    def _on_key_change(self, key_index):
+        """
+        Event handler for the "key_change" event.
+
+        Args:
+            key_index (int): Index of the key that was pressed.
+        """
+        self.root.on_key_change(key_index)
+    # end _on_key_change
+
+    # endregion EVENTS
 
 # end PanelRegistry
 

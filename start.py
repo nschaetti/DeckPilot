@@ -32,7 +32,7 @@ from StreamDeck.DeviceManager import DeviceManager
 from StreamDeck.ImageHelpers import PILHelper
 
 # Import the PanelRegistry class
-from deckpilot import PanelRegistry, render_panel
+from deckpilot import PanelRegistry, render_panel, EventBus, DeckManager
 
 
 # Configuration de logging
@@ -53,6 +53,14 @@ parser.add_argument(
     default="~/.config/DeckPilot/config.tom",
     help='Path to the configuration file'
 )
+parser.add_argument(
+    '-r',
+    '--root',
+    type=str,
+    required=False,
+    default="config/root",
+    help='Path to the root panel'
+)
 args = parser.parse_args()
 
 # Load the configuration
@@ -63,58 +71,15 @@ STREAMDECK_BRIGHTNESS = config['streamdeck']['brightness']
 STREAMDECK_DEVICE_INDEX = config['streamdeck'].get('device_index', None)
 STREAMDECK_SERIAL_NUMBER = config['streamdeck'].get('serial_number', None)
 
+# Event bus
+event_bus = EventBus()
+
+# Create DeckManager
+deck_manager = DeckManager(event_bus)
+
 # Configuration of the panels
-registry = PanelRegistry("config/root")
+registry = PanelRegistry(args.root, event_bus)
 registry.print_structure()
-
-# Update touch image
-def update_key_image(deck, key, state):
-    """
-    Update touche image
-
-    Args:
-    - deck: StreamDeck - the StreamDeck
-    - key: int - the key index
-    - state: bool - the key state
-    """
-    # Log
-    logging.info(f"Deck {deck.id()} Key {key} = {state}")
-# end update_key_image
-
-
-# Callback for state change of a key
-def key_change_callback(deck, key, state):
-    """
-    Callback for state change of a key
-
-    Args:
-    - deck: StreamDeck - the StreamDeck
-    - key: int - the key index
-    - state: bool - the key state
-    """
-    # Log
-    logging.info(f"Deck {deck.id()} Key {key} = {state}")
-# end key_change_callback
-
-
-# SIGINT management
-def signal_handler(signal, frame):
-    """
-    Signal handler
-
-    Args:
-    - signal: int - the signal number
-    - frame: frame - the current stack frame
-    """
-    logging.info("Exiting...")
-    for d in streamdecks:
-        if d.is_visual():
-            d.reset()
-            d.close()
-        # end if
-    # end for
-    exit(0)
-# end signal_handler
 
 
 # Main

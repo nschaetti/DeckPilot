@@ -22,20 +22,56 @@ GNU General Public License for more details.
 For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 """
 
-# Imports
-from .deck_manager import DeckManager
-from .panel_registry import PanelRegistry, PanelNode
-from .event_bus import EventBus
-from .render import render_panel
+from collections import defaultdict
+from typing import Callable, Any
 
-__all__ = [
-    # Deck Manager
-    "DeckManager",
-    # Panel Registry
-    "PanelRegistry",
-    "PanelNode",
-    # Event Bus
-    "EventBus",
-    # Rendering
-    "render_panel"
-]
+
+
+class EventBus:
+    """
+    Simple event system for Pub/Sub.
+    """
+
+    # Constructor
+    def __init__(self):
+        """
+        Constructor for the EventBus class.
+        """
+        self._subscribers = defaultdict(list)
+    # end __init__
+
+    def subscribe(
+            self,
+            event_type: str,
+            callback: Callable[[Any], None]
+    ):
+        """
+        Subscribe a callback function to an event type.
+
+        Args:
+        - event_type (str): Type of event to subscribe to.
+        - callback (Callable[[Any], None]): Callback function to call when the event is published.
+        """
+        self._subscribers[event_type].append(callback)
+    # end subscribe
+
+    def publish(
+            self,
+            event_type: str,
+            data: Any = None
+    ):
+        """
+        Publish an event and notify all subscribers.
+
+        Args:
+        - event_type (str): Type of event to publish.
+        - data (Any): Data to pass to the subscribers.
+        """
+        if event_type in self._subscribers:
+            for callback in self._subscribers[event_type]:
+                callback(data)
+            # end for
+        # end if
+    # end publish
+
+# end EventBus
