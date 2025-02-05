@@ -1,0 +1,4 @@
+toml~=0.10.2
+pex~=2.32.1
+streamdeck~=0.9.6
+pillow~=11.1.0

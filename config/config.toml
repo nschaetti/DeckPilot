@@ -1,0 +1,8 @@
+# DeckPilot configuration
+
+# StreamDeck configuration
+[streamdeck]
+brightness = 30
+# Ajout de la spécification du StreamDeck
+device_index = 0  # Ou utilisez serial_number = "1234567890"
+
