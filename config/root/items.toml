@@ -1,0 +1,14 @@
+# Root
+
+[[items]]
+name = "subpanel1"
+type = "panel"
+
+[[items]]
+name = "hello_button"
+type = "button"
+
+[[items]]
+name = "subpanel2"
+type = "panel"
+

@@ -26,11 +26,14 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 import logging
 import signal
 import threading
+from rich.console import Console
 from StreamDeck.DeviceManager import DeviceManager
+
+from .deck_renderer import DeckRenderer
 
 
 # Configuration de logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+console = Console()
 
 
 class DeckManager:
@@ -45,8 +48,11 @@ class DeckManager:
         self._event_bus = event_bus
         self._deck = None
         self._streamdesks = None
+        self._serial_number = None
+        self._brightness = 30
         self._initialized = False
         self._key_change_callbacks = list()
+        self._renderer = DeckRenderer(self)
     # end __init__
 
     # region PROPERTIES
@@ -67,6 +73,14 @@ class DeckManager:
         return self._initialized
     # end initialized
 
+    @property
+    def renderer(self):
+        """
+        Get the DeckRenderer.
+        """
+        return self._renderer
+    # end renderer
+
     # endregion PROPERTIES
 
     # region PUBLIC METHODS
@@ -81,16 +95,24 @@ class DeckManager:
         self._key_change_callbacks.append(callback)
     # end add_key_change_callback
 
-    def init_deck(self, serial_number, device_index):
+    def init_deck(self, serial_number, device_index, brightness):
         """
         Initialize the Stream Deck device.
+
+        Args:
+        - serial_number (str): Serial number of the Stream Deck.
+        - device_index (int): Index of the Stream Deck.
+        - brightness (int): Brightness level for the Stream Deck.
         """
         # Capture signal interrupt
         signal.signal(signal.SIGINT, self._signal_handler)
 
         # Get StreamDeck(s)
         self._streamdecks = DeviceManager().enumerate()
-        logging.info(f"Found {len(self._streamdecks)} Stream Deck(s).")
+        console.log(f"Found {len(self._streamdecks)} Stream Deck(s).")
+
+        # Set brightness
+        self._brightness = brightness
 
         # Find the specific StreamDeck
         deck = None
@@ -107,19 +129,22 @@ class DeckManager:
 
         # Error if no StreamDeck found
         if deck is None:
-            logging.error("No matching StreamDeck found.")
+            console.log("ERROR: No matching StreamDeck found!", log_locals=True)
             exit(1)
         # end if
 
         # Set deck
         self._deck = deck
+        self._serial_number = serial_number
         self._initialized = True
+
+        # Log
+        console.log(f"Selected StreamDeck {self._deck} initialized.")
     # end init_deck
 
     # Main
     def main(
-            self,
-            brightness
+            self
     ):
         """
         Main method for the DeckManager class.
@@ -129,30 +154,30 @@ class DeckManager:
         """
         # Open the specific StreamDeck
         if self.deck.is_visual():
+            # Check that the StreamDeck is initialized
+            if not self.initialized:
+                console.log("ERROR: StreamDeck not initialized!", log_locals=True)
+                return
+            # end if
+
             # Open the StreamDeck
             self.deck.open()
-            self.deck.reset()
+
+            # Clear the deck
+            self._renderer.clear_deck()
 
             # Log
-            logging.info(
+            console.log(
                 f"Opened '{self.deck.deck_type()}' "
                 f"device (serial number: '{self.deck.get_serial_number()}', "
                 f"fw: '{self.deck.get_firmware_version()}')"
             )
 
             # Set the brightness
-            self.deck.set_brightness(brightness)
+            self.deck.set_brightness(self._brightness)
 
-            # Set the initial panel
-            # self.deck.current_panel = registry.root
-
-            # Render the root panel
-            # render_panel(self.deck, registry.root)
-
-            # Update the keys
-            # for key in range(deck.key_count()):
-            #     update_key_image(deck, key, False)
-            # end for
+            # Launch initialized event
+            self._event_bus.publish("initialized", (self.deck,))
 
             # Set the key callback
             self.deck.set_key_callback(self._key_change_callback)
@@ -165,6 +190,8 @@ class DeckManager:
                     pass
                 # end try
             # end for
+        else:
+            console.log("ERROR: No visual StreamDeck found!", log_locals=True)
         # end if
     # end main
 
@@ -175,7 +202,7 @@ class DeckManager:
     # Update touch image
     def _update_key_image(deck, key, state):
         """
-        Update touche image
+        Update touch image
 
         Args:
         - deck: StreamDeck - the StreamDeck
@@ -183,7 +210,7 @@ class DeckManager:
         - state: bool - the key state
         """
         # Log
-        logging.info(f"Deck {deck.id()} Key {key} = {state}")
+        console.log(f"Deck {deck.id()} Key {key} = {state}")
     # end _update_key_image
 
     # Callback for state change of a key
@@ -197,7 +224,7 @@ class DeckManager:
         - state: bool - the key state
         """
         # Log
-        logging.info(f"Deck {deck.id()} Key {key} = {state}")
+        # console.log(f"Deck {deck.id()} Key {key} = {state}")
 
         # Publish the key change event
         self._event_bus.publish("key_change", (deck, key, state))
@@ -208,13 +235,20 @@ class DeckManager:
         """
         Signal handler for the Stream Deck.
         """
-        logging.info("Exiting...")
+        # Send the exit event
+        self._event_bus.publish("exit", ())
+
+        # Close the StreamDeck
         for d in self._streamdecks:
             if d.get_serial_number() == self._serial_number:
+                console.log(f"Closing StreamDeck {d.get_serial_number()}...")
                 d.reset()
                 break
             # end if
         # end for
+
+        # Log
+        console.log("Exiting...")
         exit(0)
     # end _signal_handler
 

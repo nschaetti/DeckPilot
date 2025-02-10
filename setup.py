@@ -23,30 +23,16 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 """
 
 # Imports
-from .deck_manager import DeckManager
-from .deck_renderer import DeckRenderer
-from .panel_registry import PanelRegistry
-from .event_bus import EventBus
-from .panel_nodes import Panel, Button
-from .render import render_panel
-from .utils import load_image, load_package_icon, load_package_font
+from setuptools import setup, find_packages
 
-__all__ = [
-    # Deck Manager
-    "DeckManager",
-    # Deck Renderer
-    "DeckRenderer",
-    # Panel Registry
-    "PanelRegistry",
-    # Event Bus
-    "EventBus",
-    # Panel Nodes
-    "Panel",
-    "Button",
-    # Rendering
-    "render_panel",
-    # Utils
-    "load_image",
-    "load_package_icon",
-    "load_package_font"
-]
+# Setup
+setup(
+    name="DeckPilot",
+    version="1.0.0",
+    packages=find_packages(),
+    include_package_data=True,
+    package_data={
+        "deckpilot": ["icons/*.png", "assets/*.ttf", "assets/*.otf"],
+    },
+)
+

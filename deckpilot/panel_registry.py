@@ -26,152 +26,16 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 import os
 import importlib.util
 import logging
+from rich.console import Console
+from rich.tree import Tree
+from rich.console import Console
+from rich.text import Text
+
+from .panel_nodes import Panel
 
 
-# Configuration du logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-
-
-class PanelNode:
-    """
-    Represents a node in the panel hierarchy.
-    Each node can contain buttons and sub-panels.
-    """
-
-    # Constructor
-    def __init__(
-            self,
-            name,
-            path,
-            parent=None
-    ):
-        """
-        Constructor for the PanelNode class.
-
-        Args:
-            name (str): Name of the panel.
-            path (str): Path to the panel directory.
-            parent (PanelNode): Parent panel.
-        """
-        self.name = name
-        self.path = path
-        self.parent = parent
-        self.buttons = {}  # {button_name: button_path}
-        self.sub_panels = {}  # {sub_panel_name: PanelNode}
-        self.icon = self._load_icon()
-        self.active = False
-    # end __init__
-
-    # region PUBLIC METHODS
-
-    # Get active panel
-    def get_active_panel(self):
-        """
-        Retrieves the active panel.
-
-        Returns:
-            PanelNode: The active panel.
-        """
-        if self.active:
-            return self
-        else:
-            for sub_panel in self.sub_panels.values():
-                panel = sub_panel.get_active_panel()
-                if panel:
-                    return panel
-                # end if
-            # end for
-        # end if
-    # end get_active_panel
-
-    # Add button
-    def add_button(
-            self,
-            button_name,
-            button_path
-    ):
-        """
-        Adds a button to the current panel.
-
-        Args:
-            button_name (str): Name of the button.
-            button_path (str): Path to the Python file that will be executed when the button is pressed
-        """
-        icon_path = os.path.join(self.path, f"{button_name}.png")
-        icon = self._load_image(icon_path) if os.path.exists(icon_path) else None
-        self.buttons[button_name] = (button_path, icon)
-    # end add_button
-
-    # Add sub-panel
-    def add_sub_panel(
-            self,
-            sub_panel_name,
-            sub_panel_node
-    ):
-        """
-        Adds a sub-panel (child panel).
-
-        Args:
-            sub_panel_name (str): Name of the sub-panel.
-            sub_panel_node (PanelNode): Sub-panel node.
-        """
-        self.sub_panels[sub_panel_name] = sub_panel_node
-    # end add_sub_panel
-
-    # endregion PUBLIC METHODS
-
-    # region PRIVATE METHODS
-
-    #  Load icon
-    def _load_icon(self):
-        """
-        Loads the icon for the panel.
-        """
-        icon_path = os.path.join(self.path, f"{self.name}.png")
-        if os.path.exists(icon_path):
-            return self._load_image(icon_path)
-        # end if
-        return None
-    # end _load_icon
-
-    # Load image
-    def _load_image(self, image_path):
-        """
-        Loads an image from a file.
-
-        Args:
-            image_path (str): Path to the image file.
-
-        Returns:
-            PIL.Image: The loaded image.
-        """
-        try:
-            from PIL import Image
-            return Image.open(image_path)
-        except ImportError:
-            logging.error("PIL is required to load images.")
-            return None
-        # end try
-    # end _load_images
-
-    # endregion PRIVATE METHODS
-
-    # region EVENTS
-
-    # On key change
-    def on_key_change(self, key_index):
-        """
-        Event handler for the "key_change" event.
-
-        Args:
-            key_index (int): Index of the key that was pressed.
-        """
-        logging.info(f"Key {key_index} pressed in panel {self.name}")
-    # end on_key_change
-
-    # endregion EVENTS
-
-# end PanelNode
+# Console
+console = Console()
 
 
 # PanelRegistry
@@ -194,50 +58,16 @@ class PanelRegistry:
         """
         self._event_bus = event_bus
         self.base_path = base_path
-        self.root = PanelNode("root", base_path)
-        self.load_panel(self.root)
+        self.root = Panel("root", base_path, parent=None, renderer=deck_renderer, active=True)
         self._deck_renderer = deck_renderer
 
-        # Dynamic mapping of keys to panels
-        self._active_panel = self.root
-        self._active_panel_map = {}
-
-        # Subscribe to the "panel_change" event
+        # Subscribe to events
         self._event_bus.subscribe("key_change", self._on_key_change)
+        self._event_bus.subscribe("initialized", self._on_initialize)
+        self._event_bus.subscribe("exit", self._on_exit)
     # end __init__
 
     # region PUBLIC METHODS
-
-    # Load panel
-    def load_panel(
-            self,
-            panel_node
-    ):
-        """
-        Recursively loads a panel and its sub-panels.
-
-        Args:
-            panel_node (PanelNode): Panel node to load.
-        """
-        if not os.path.exists(panel_node.path):
-            logging.error(f"Panel {panel_node.path} does not exist.")
-            return
-        # end if
-
-        # For each file in the directory
-        for entry in os.scandir(panel_node.path):
-            if entry.is_file() and entry.name.endswith(".py"):
-                button_name = os.path.splitext(entry.name)[0]
-                panel_node.add_button(button_name, entry.path)
-                logging.info(f"Added button: {button_name} -> {entry.path} (Panel: {panel_node.name})")
-            elif entry.is_dir():
-                sub_panel_node = PanelNode(entry.name, entry.path, parent=panel_node)
-                panel_node.add_sub_panel(entry.name, sub_panel_node)
-                logging.info(f"Added sub-panel: {entry.name} (Panel: {panel_node.name})")
-                self.load_panel(sub_panel_node)
-            # end if
-        # end for
-    # end load_panel
 
     # Get panel
     def get_panel(self, path_list):
@@ -255,42 +85,30 @@ class PanelRegistry:
             if panel_name in current_node.sub_panels:
                 current_node = current_node.sub_panels[panel_name]
             else:
-                logging.warning(f"Panel '{panel_name}' not found in hierarchy.")
+                console.log(f"WARNING: Panel '{panel_name}' not found in hierarchy.")
                 return None
             # end if
         # end for
         return current_node
     # end get_panel
 
-    def print_structure(
-            self,
-            node=None,
-            indent=0
-    ):
+    # Rendering current panel
+    def render(self):
         """
-        Prints the hierarchy of panels and buttons.
-
-        Args:
-            node (PanelNode): The current node to print.
-            indent (int): Indentation level for hierarchy display.
+        Renders the current panel on the Stream Deck.
         """
-        if node is None:
-            node = self.root
-        # end if
+        # Get active panel
+        active_panel = self._get_active_panel()
 
-        print("  " * indent + f"[Panel] {node.name}")
-        if node.icon:
-            print("  " * indent + "  (Icon loaded)")
-        # end if
+        # Render active panel
+        active_panel.render()
+    # end render
 
-        for button_name, (button_path, button_icon) in node.buttons.items():
-            icon_status = " (Icon loaded)" if button_icon else ""
-            print("  " * (indent + 1) + f"🔘 {button_name} → {button_path}{icon_status}")
-        # end for
-
-        for sub_panel in node.sub_panels.values():
-            self.print_structure(sub_panel, indent + 1)
-        # end for
+    def print_structure(self):
+        """
+        Prints the hierarchy of panels and buttons using Rich.
+        """
+        self.root.print_structure()
     # end print_structure
 
     # endregion PUBLIC METHODS
@@ -309,15 +127,35 @@ class PanelRegistry:
 
     # region EVENTS
 
+    # On initialize
+    def _on_initialize(self, deck):
+        """
+        Event handler for the "initialized" event.
+        """
+        console.log(f"On initialize")
+
+        self.render()
+    # end _on_initialize
+
+    # On exit
+    def _on_exit(self):
+        """
+        Event handler for the "exit" event.
+        """
+        console.log(f"On exit")
+        # self._deck_renderer.clear_deck()
+    # end _on_exit
+
     # On key change
-    def _on_key_change(self, key_index):
+    def _on_key_change(self, deck, key_index, state):
         """
         Event handler for the "key_change" event.
 
         Args:
             key_index (int): Index of the key that was pressed.
         """
-        self.root.on_key_change(key_index)
+        console.log(f"Key {key_index} state {state}")
+        self.root.on_key_change(deck, key_index, state)
     # end _on_key_change
 
     # endregion EVENTS

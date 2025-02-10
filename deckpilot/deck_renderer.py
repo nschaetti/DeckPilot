@@ -23,6 +23,11 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 """
 
 # Imports
+import os
+from PIL import Image, ImageDraw, ImageFont
+from StreamDeck.ImageHelpers import PILHelper
+
+from .utils import load_package_font
 
 
 # Manage the rendering of the Stream Deck
@@ -96,16 +101,41 @@ class DeckRenderer:
         self.update_key(key_index, image)
     # end set_key
 
-    # Render the content of a PanelNode on the Stream Deck
-    def render(self, panel_node):
+    # Set image key on the Stream Deck
+    def set_image_key(self, key_index, image):
         """
-        Render the content of a PanelNode on the Stream Deck.
+        Set an image key on the Stream Deck.
 
         Args:
-        - panel_node (PanelNode): PanelNode to render.
+        - key_index (int): Index of the key to update.
+        - image (PIL.Image): Image to display on the key.
         """
-        pass
-    # end render
+        self.update_key(key_index, image)
+    # end set_image_key
+
+    # Render an icon on the Stream Deck
+    def render_key(self, key_index, icon, text=""):
+        """
+        Render an icon on the Stream Deck.
+
+        Args:
+        - key_index (int): Index of the key to update.
+        - icon (PIL.Image): Icon to display on the key.
+        - text (str): Text to display on the key.
+        """
+        # Create key image
+        image = PILHelper.create_scaled_key_image(self.deck, icon, margins=[0, 0, 20, 0])
+        draw = ImageDraw.Draw(image)
+
+        # Load font from package
+        font = load_package_font("barlow.otf", 14)
+        draw.text((image.width / 2, image.height - 5), text=text, font=font, anchor="ms", fill="white")
+
+        image = PILHelper.to_native_key_format(self.deck, image)
+
+        # Update key
+        self.deck.set_key_image(key_index, image)
+    # end render_key
 
     # endregion PUBLIC METHODS
 

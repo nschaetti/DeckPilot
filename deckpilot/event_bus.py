@@ -69,7 +69,7 @@ class EventBus:
         """
         if event_type in self._subscribers:
             for callback in self._subscribers[event_type]:
-                callback(data)
+                callback(*data)
             # end for
         # end if
     # end publish
