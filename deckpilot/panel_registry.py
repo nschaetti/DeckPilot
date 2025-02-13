@@ -132,8 +132,10 @@ class PanelRegistry:
         """
         Event handler for the "initialized" event.
         """
-        console.log(f"On initialize")
+        # Log
+        console.log(f"PanelRegistry::_on_initialize")
 
+        # Render the current panel
         self.render()
     # end _on_initialize
 
@@ -142,7 +144,7 @@ class PanelRegistry:
         """
         Event handler for the "exit" event.
         """
-        console.log(f"On exit")
+        console.log(f"PanelRegistry::_on_exit")
         # self._deck_renderer.clear_deck()
     # end _on_exit
 
@@ -154,8 +156,17 @@ class PanelRegistry:
         Args:
             key_index (int): Index of the key that was pressed.
         """
-        console.log(f"Key {key_index} state {state}")
-        self.root.on_key_change(deck, key_index, state)
+        console.log(f"PanelRegistry::_on_key_change {key_index} state {state}")
+
+        # Active panel
+        active_panel = self._get_active_panel()
+
+        # Key pressed event
+        if state:
+            active_panel.on_key_pressed(key_index)
+        else:
+            active_panel.on_key_released(key_index)
+        # end if
     # end _on_key_change
 
     # endregion EVENTS

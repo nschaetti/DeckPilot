@@ -95,6 +95,7 @@ class DeckManager:
         self._key_change_callbacks.append(callback)
     # end add_key_change_callback
 
+    # Initialize the Stream Deck
     def init_deck(self, serial_number, device_index, brightness):
         """
         Initialize the Stream Deck device.
@@ -164,7 +165,7 @@ class DeckManager:
             self.deck.open()
 
             # Clear the deck
-            self._renderer.clear_deck()
+            self._renderer.reset_deck()
 
             # Log
             console.log(
@@ -239,13 +240,9 @@ class DeckManager:
         self._event_bus.publish("exit", ())
 
         # Close the StreamDeck
-        for d in self._streamdecks:
-            if d.get_serial_number() == self._serial_number:
-                console.log(f"Closing StreamDeck {d.get_serial_number()}...")
-                d.reset()
-                break
-            # end if
-        # end for
+        console.log(f"Closing StreamDeck {self._deck.get_serial_number()}...")
+        self._deck.reset()
+        self._deck.close()
 
         # Log
         console.log("Exiting...")

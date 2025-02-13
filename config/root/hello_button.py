@@ -1,7 +1,33 @@
+"""
+ ██████╗ ███████╗ ██████╗██╗  ██╗██████╗ ██╗      ██████╗ ██╗████████╗
+██╔════╝ ██╔════╝██╔════╝██║  ██║██╔══██╗██║     ██╔═══██╗██║╚══██╔══╝
+██║  ███╗█████╗  ██║     ███████║██║  ██║██║     ██║   ██║██║   ██║
+██║   ██║██╔══╝  ██║     ██╔══██║██║  ██║██║     ██║   ██║██║   ██║
+╚██████╔╝███████╗╚██████╗██║  ██║██████╔╝███████╗╚██████╔╝██║   ██║
+ ╚═════╝ ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═════╝ ╚══════╝ ╚═════╝ ╚═╝   ╚═╝
+
+DeckPilot - A customizable interface for your Stream Deck.
+Licensed under the GNU General Public License v3.0
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
+"""
 
 # Imports
+import os
 from deckpilot import Button
 from rich.console import Console
+
+from deckpilot.utils import load_image, load_package_icon
 
 
 # Console
@@ -31,27 +57,6 @@ class HelloButton(Button):
         super().__init__(name, path, parent)
         console.log(f"HelloButton {name} created.")
     # end __init__
-
-    def on_button_rendered(self):
-        """
-        Render button
-        """
-        console.log(f"Button {self.name} rendered")
-    # end on_button_rendered
-
-    def _on_button_pressed(self, key_index):
-        """
-        Event handler for the "button_pressed" event.
-        """
-        console.log(f"Button {self.name} pressed")
-    # end _on_button_pressed
-
-    def _on_button_released(self, key_index):
-        """
-        Event handler for the "button_released" event.
-        """
-        console.log(f"Button {self.name} released")
-    # end _on_button_released
 
 # end HelloButton
 

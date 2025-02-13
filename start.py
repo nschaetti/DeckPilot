@@ -25,16 +25,11 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 # Imports
 import argparse
 import toml
-import logging
-import threading
-import signal
 from rich.console import Console
 from rich.traceback import install
-from StreamDeck.DeviceManager import DeviceManager
-from StreamDeck.ImageHelpers import PILHelper
 
 # Import the PanelRegistry class
-from deckpilot import PanelRegistry, render_panel, EventBus, DeckManager
+from deckpilot import PanelRegistry, EventBus, DeckManager
 
 
 # Load configuration

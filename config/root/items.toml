@@ -5,10 +5,66 @@ name = "subpanel1"
 type = "panel"
 
 [[items]]
+name = "subpanel2"
+type = "panel"
+
+[[items]]
 name = "hello_button"
 type = "button"
 
 [[items]]
-name = "subpanel2"
-type = "panel"
+name = "button_01"
+type = "button"
+
+[[items]]
+name = "button_02"
+type = "button"
+
+[[items]]
+name = "button_03"
+type = "button"
+
+[[items]]
+name = "button_04"
+type = "button"
+
+[[items]]
+name = "button_05"
+type = "button"
+
+[[items]]
+name = "button_06"
+type = "button"
+
+[[items]]
+name = "button_07"
+type = "button"
+
+[[items]]
+name = "button_08"
+type = "button"
+
+[[items]]
+name = "button_09"
+type = "button"
+
+[[items]]
+name = "button_10"
+type = "button"
+
+[[items]]
+name = "button_11"
+type = "button"
+
+[[items]]
+name = "button_12"
+type = "button"
+
+[[items]]
+name = "button_13"
+type = "button"
+
+[[items]]
+name = "button_14"
+type = "button"
 

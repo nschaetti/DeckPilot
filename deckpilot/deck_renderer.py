@@ -27,7 +27,7 @@ import os
 from PIL import Image, ImageDraw, ImageFont
 from StreamDeck.ImageHelpers import PILHelper
 
-from .utils import load_package_font
+from .utils import load_package_font, load_package_icon
 
 
 # Manage the rendering of the Stream Deck
@@ -44,7 +44,11 @@ class DeckRenderer:
         Args:
         - deck_manager (DeckManager): Reference to the Stream Deck manager.
         """
+        # Deck Manager
         self._deck_manager = deck_manager
+
+        # Empty icon
+        self.empty_icon = load_package_icon("empty.svg")
     # end __init__
 
     # region PROPERTIES
@@ -69,12 +73,23 @@ class DeckRenderer:
 
     # region PUBLIC METHODS
 
+    # Reset the Stream Deck
+    def reset_deck(self):
+        """
+        Clear the Stream Deck.
+        """
+        self.deck.reset()
+    # end reset_deck
+
     # Clear the Stream Deck
     def clear_deck(self):
         """
         Clear the Stream Deck.
         """
-        self.deck.reset()
+        # Clear the deck
+        for key_index in range(self.deck.key_count()):
+            self.render_key(key_index, self.empty_icon)
+        # end for
     # end clear_deck
 
     # Update a key on the Stream Deck

@@ -23,10 +23,12 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 """
 
 # Imports
+import abc
 import os
 import importlib
 import importlib.util
 import toml
+from pathlib import Path
 
 from pex.targets import current
 from rich.console import Console
@@ -41,7 +43,7 @@ console = Console()
 
 
 # Item
-class Item:
+class Item(abc.ABC):
     """
     Represents an item in the panel.
     """
@@ -76,22 +78,64 @@ class Item:
     # region PUBLIC METHODS
 
     # Get icon
-    def get_icon(self):
+    def get_icon(self, state=None):
         """
         Get the icon for the item.
+
+        Args:
+            state (str): State of the button.
         """
         for ext in ["svg", "png"]:
-            icon_path = os.path.join(self.path, f"{self.name}.{ext}")
+            # Icon path
+            if state:
+                icon_path = Path(self.path).parent / f"{self.name}_{state}.{ext}"
+            else:
+                icon_path = Path(self.path).parent / f"{self.name}.{ext}"
+            # end if
+            icon_path = str(icon_path)
+            console.log(f"Checking icon: {icon_path}")
+            # Load icon
             if os.path.exists(icon_path):
                 console.log(f"Loading icon: {icon_path}")
                 return load_image(icon_path)
             # end if
         # end for
-
+        console.log(f"Using default icon for {self.name}")
         return self.default_icon
     # end get_icon
 
     # endregion PUBLIC METHODS
+
+    # region EVENTS
+
+    # On item rendered
+    @abc.abstractmethod
+    def on_item_rendered(self):
+        """
+        Event handler for the "item_rendered" event.
+        """
+        ...
+    # end on_item_rendered
+
+    # On item pressed
+    @abc.abstractmethod
+    def on_item_pressed(self, key_index):
+        """
+        Event handler for the "item_pressed" event.
+        """
+        ...
+    # end on_item_pressed
+
+    # On item released
+    @abc.abstractmethod
+    def on_item_released(self, key_index):
+        """
+        Event handler for the "item_released" event.
+        """
+        ...
+    # end on_item_released
+
+    # endregion EVENTS
 
 # end Item
 
@@ -119,6 +163,40 @@ class Button(Item):
             load_package_icon("button_default.svg")
         )
     # end __init__
+
+    def on_item_rendered(self):
+        """
+        Render button
+        """
+        # Log
+        console.log(f"{self.__class__.__name__}({self.name})::on_item_renderer")
+
+        # Return icon
+        return self.get_icon()
+    # end on_item_rendered
+
+    def on_item_pressed(self, key_index):
+        """
+        Event handler for the "on_item_pressed" event.
+        """
+        # Log
+        console.log(f"{self.__class__.__name__}({self.name})::on_item_pressed")
+        icon = self.get_icon("pressed")
+        console.log(f"Icon: {icon}")
+        # Get the icon
+        return icon
+    # end on_item_pressed
+
+    def on_item_released(self, key_index):
+        """
+        Event handler for the "on_item_released" event.
+        """
+        # Log
+        console.log(f"{self.__class__.__name__}({self.name})::on_item_released")
+
+        # Return icon
+        return self.get_icon()
+    # end on_item_released
 
 # end Button
 
@@ -148,7 +226,7 @@ class Panel(Item):
             parent,
             default_icon=load_package_icon("folder_default.svg")
         )
-
+        console.log(f"Panel {name} created.")
         # Attributes
         self.items = {}
         self.renderer = renderer
@@ -298,10 +376,12 @@ class Panel(Item):
         if self.active:
             return self
         else:
-            for sub_panel in self.children.values():
-                panel = sub_panel.get_active_panel()
-                if panel:
-                    return panel
+            for sub_panel in self.items.values():
+                if isinstance(sub_panel, Panel):
+                    panel = sub_panel.get_active_panel()
+                    if panel:
+                        return panel
+                    # end if
                 # end if
             # end for
         # end if
@@ -389,6 +469,7 @@ class Panel(Item):
         """
         Loads all button classes from Python files in the panel directory.
         """
+        console.log(f"Loading buttons from {self.path}")
         for entry in os.scandir(self.path):
             if entry.is_file() and entry.name.endswith(".py"):
                 button_name = os.path.splitext(entry.name)[0]
@@ -406,6 +487,7 @@ class Panel(Item):
             child_name (str): Name of the child panel.
         """
         child_path = os.path.join(self.path, child_name)
+        console.log(f"Loading child: {child_path}, {child_name}")
         if os.path.exists(child_path) and os.path.isdir(child_path) and not (child_name.startswith(".") or (child_name.startswith("__") and child_name.endswith("__"))):
             child = Panel(name=child_name, path=child_path, parent=self, renderer=self.renderer)
             self.add_child(child.name, child)
@@ -421,7 +503,9 @@ class Panel(Item):
         Loads all child panels from directories in the panel directory.
         """
         for entry in os.scandir(self.path):
-            self.load_child(entry.name)
+            if entry.is_dir() and not (entry.name.startswith(".") or (entry.name.startswith("__") and entry.name.endswith("__"))):
+                self.load_child(entry.name)
+            # end if
         # end for
     # end load_children
 
@@ -430,6 +514,9 @@ class Panel(Item):
         """
         Renders the current panel on the Stream Deck.
         """
+        # Clear the deck
+        self.renderer.clear_deck()
+
         # If we are on the first page, show "Upper" buttons
         if self.current_page == 0 and self.parent:
             self.renderer.render_key(0, self.parent_folder_icon, "Parent")
@@ -444,9 +531,11 @@ class Panel(Item):
         for i, item in enumerate(self.items.values()):
             item_index = i + 1 if self.parent else i
             if item_index <= 13:
-                item_icon = item.get_icon()
+                item_icon = item.on_item_rendered()
                 console.log(f"item_icon: {item_icon}")
-                self.renderer.render_key(item_index, item_icon, item.name)
+                if item_icon:
+                    self.renderer.render_key(item_index, item_icon, item.name)
+                # end if
             # end if
         # end for
 
@@ -454,6 +543,9 @@ class Panel(Item):
         if self.n_pages > 1 and self.current_page < self.n_pages - 1:
             self.renderer.render_key(14, self.next_page_icon, "Suivant")
         # end if
+
+        # Render event
+        self.on_item_rendered()
     # end render
 
     # Print structure
@@ -559,22 +651,144 @@ class Panel(Item):
         # end try
     # end _load_images
 
+    # Handle key change
+    def _handle_key_pressed(self, key_index):
+        """
+        Handles a key change event.
+
+        Args:
+            key_index (int): Index of the key that was pressed.
+        """
+        # Item index and item
+        item_index = key_index - 1 if self.parent else key_index
+        item = list(self.items.values())[item_index] if item_index >= 0 else self.parent
+
+        # Log
+        console.log(f"Panel({self.name})::handle_key_pressed item {item_index}, item type {item.__class__.__name__}")
+
+        # Dispatch event
+        item_icon = item.on_item_pressed(key_index)
+
+        # Update icon if needed
+        if item_icon:
+            self.renderer.render_key(key_index, item_icon, item.name)
+        # end if
+    # end handle_key_pressed
+
+    # end handle_key_pressed
+
+    # Handle key released
+    def _handle_key_released(self, key_index):
+        """
+        Handles a key change event.
+
+        Args:
+            key_index (int): Index of the key that was pressed.
+        """
+        # Item index
+        item_index = key_index - 1 if self.parent else key_index
+        item = list(self.items.values())[item_index] if item_index >= 0 else self.parent
+
+        # Log
+        console.log(f"Panel({self.name})::handle_key_released item {item_index}, item type {item.__class__.__name__}")
+
+        # Dispatch event
+        item_icon = item.on_item_released(key_index)
+
+        # Update icon if needed
+        if item_icon:
+            self.renderer.render_key(key_index, item_icon, item.name)
+        # end if
+
+        # Key 0, and a parent
+        if type(item) is Panel:
+            self.set_inactive()
+            item.set_active(True)
+            item.render()
+        # end if
+    # end _handle_key_released
+
     # endregion PRIVATE METHODS
 
     # region EVENTS
 
-    # On key change
-    def on_key_change(self, deck, key_index, state):
+    # On item rendered
+    def on_item_rendered(self):
         """
-        Event handler for the "key_change" event.
+        Event handler for the "item_rendered" event.
+        """
+        # Log
+        console.log(f"Panel({self.name})::on_item_renderer")
+
+        # Return icon
+        return self.get_icon()
+    # end on_item_rendered
+
+    # On item pressed
+    def on_item_pressed(self, key_index):
+        """
+        Event handler for the "item_pressed" event.
+
+        Args:
+            key_index (int): Index of the key that was pressed.
+        """
+        # Log
+        console.log(f"Panel({self.name})::on_item_pressed")
+
+        # Return icon
+        return self.get_icon("pressed")
+    # end on_item_pressed
+
+    # On item released
+    def on_item_released(self, key_index):
+        """
+        Event handler for the "item_released" event.
+
+        Args:
+            key_index (int): Index of the key that was released.
+        """
+        # Log
+        console.log(f"Panel({self.name})::on_item_released")
+
+        # Return icon
+        return self.get_icon()
+    # end on_item_released
+
+    # On key pressed
+    def on_key_pressed(self, key_index):
+        """
+        Event handler for the "key_pressed" event.
 
         Args:
             deck (StreamDeck): StreamDeck instance.
+            state (bool): State of the key (pressed or released
+        """
+        # Log
+        console.log(f"Panel({self.name})::on_key_pressed {key_index}")
+
+        # If active, handle key change
+        if self.active:
+            self._handle_key_pressed(key_index)
+        # end if
+    # end on_key_pressed
+
+    # On key released
+    def on_key_released(self, key_index):
+        """
+        Event handler for the "key_released" event.
+
+        Args:
             key_index (int): Index of the key that was pressed.
             state (bool): State of the key (pressed or released
         """
-        console.log(f"Key {key_index} state {state}, in panel {self.name}")
-    # end on_key_change
+        # Log
+        console.log(f"Panel({self.name})::on_key_released {key_index}")
+
+        # If active, handle key change
+        if self.active:
+            self._handle_key_released(key_index)
+        # end if
+    # end on_key_released
 
     # endregion EVENTS
 
