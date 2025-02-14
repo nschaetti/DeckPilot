@@ -27,6 +27,8 @@ import abc
 import os
 import importlib
 import importlib.util
+from typing import Any
+
 import toml
 from pathlib import Path
 
@@ -93,14 +95,13 @@ class Item(abc.ABC):
                 icon_path = Path(self.path).parent / f"{self.name}.{ext}"
             # end if
             icon_path = str(icon_path)
-            console.log(f"Checking icon: {icon_path}")
+
             # Load icon
             if os.path.exists(icon_path):
-                console.log(f"Loading icon: {icon_path}")
                 return load_image(icon_path)
             # end if
         # end for
-        console.log(f"Using default icon for {self.name}")
+
         return self.default_icon
     # end get_icon
 
@@ -119,7 +120,7 @@ class Item(abc.ABC):
 
     # On item pressed
     @abc.abstractmethod
-    def on_item_pressed(self, key_index):
+    def on_item_pressed(self, key_index)-> Any:
         """
         Event handler for the "item_pressed" event.
         """
@@ -128,12 +129,21 @@ class Item(abc.ABC):
 
     # On item released
     @abc.abstractmethod
-    def on_item_released(self, key_index):
+    def on_item_released(self, key_index)-> Any:
         """
         Event handler for the "item_released" event.
         """
         ...
     # end on_item_released
+
+    # On periodic tick
+    @abc.abstractmethod
+    def on_periodic_tick(self) -> Any:
+        """
+        Event handler for the "periodic" event.
+        """
+        ...
+    # end on_periodic_tick
 
     # endregion EVENTS
 
@@ -156,20 +166,38 @@ class Button(Item):
             path (str): Path to the button file.
             parent (PanelNode): Parent panel.
         """
+        # Call parent constructor
         super().__init__(
             name,
             path,
             parent,
             load_package_icon("button_default.svg")
         )
+
+        # Pressed
+        self._pressed = False
     # end __init__
+
+    # region PROPERTIES
+
+    @property
+    def pressed(self):
+        """
+        Get the pressed state of the button.
+        """
+        return self._pressed
+    # end pressed
+
+    # endregion PROPERTIES
+
+    # region EVENTS
 
     def on_item_rendered(self):
         """
         Render button
         """
         # Log
-        console.log(f"{self.__class__.__name__}({self.name})::on_item_renderer")
+        console.log(f"[blue bold]{self.__class__.__name__}[/]({self.name})::on_item_renderer")
 
         # Return icon
         return self.get_icon()
@@ -180,9 +208,12 @@ class Button(Item):
         Event handler for the "on_item_pressed" event.
         """
         # Log
-        console.log(f"{self.__class__.__name__}({self.name})::on_item_pressed")
+        console.log(f"[blue bold]{self.__class__.__name__}[/]({self.name})::on_item_pressed")
         icon = self.get_icon("pressed")
-        console.log(f"Icon: {icon}")
+
+        # Set pressed
+        self._pressed = True
+
         # Get the icon
         return icon
     # end on_item_pressed
@@ -192,11 +223,25 @@ class Button(Item):
         Event handler for the "on_item_released" event.
         """
         # Log
-        console.log(f"{self.__class__.__name__}({self.name})::on_item_released")
+        console.log(f"[blue bold]{self.__class__.__name__}[/]({self.name})::on_item_released")
+
+        # Set pressed
+        self._pressed = False
 
         # Return icon
         return self.get_icon()
     # end on_item_released
+
+    def on_periodic_tick(self) -> Any:
+        """
+        Event handler for the "periodic" event.
+        """
+        # Log
+        # console.log(f"[blue bold]{self.__class__.__name__}[/]({self.name})::on_periodic_tick")
+        return None
+    # end on_periodic_tick
+
+    # endregion EVENTS
 
 # end Button
 
@@ -246,6 +291,10 @@ class Panel(Item):
             self.load_buttons()
             self.load_children()
         # end if
+
+        # Compute page assignment
+        self.pages = self._page_assignment()
+        console.log(self.pages)
     # end __init__
 
     # region PROPERTIES
@@ -256,7 +305,7 @@ class Panel(Item):
         """
         Get the number of pages in the panel.
         """
-        return self.get_n_pages(self.n_elements)
+        return len(self.pages)
     # end n_pages
 
     # Number of buttons
@@ -298,6 +347,13 @@ class Panel(Item):
         Args:
             active (bool): Active state.
         """
+        # Activated event
+        if active and not self.active:
+            console.log(f"Panel({self.name})::set_active")
+            self.on_panel_activated()
+        # end if
+
+        # Set active
         self.active = active
     # end set_active
 
@@ -331,38 +387,36 @@ class Panel(Item):
         # end if
     # end previous_page
 
+    # Has a next page ?
+    def has_next_page(self):
+        """
+        Checks if the panel has a next page.
+        """
+        return self.current_page < self.n_pages - 1
+    # end has_next_page
+
+    # Has a previous page ?
+    def has_previous_page(self):
+        """
+        Checks if the panel has a previous page.
+        """
+        return self.current_page > 0
+    # end has_previous_page
+
+    # Has parent ?
+    def has_parent(self):
+        """
+        Checks if the panel has a parent.
+        """
+        return self.parent is not None
+    # end has_parent
+
     # Get the number of pages
-    def get_n_pages(self, n_elements):
+    def get_n_pages(self):
         """
         Get the number of pages in the panel.
-
-        Args:
-            n_elements (int): Number of elements.
-            rec (bool):
         """
-        element_count = n_elements
-        first_page = True
-        n_pages = 1
-
-        if self.parent is None and element_count <= 14:
-            return 1
-        elif self.parent and element_count <= 13:
-            return 1
-        # end i
-
-        # Remove first page
-        if not self.parent:
-            element_count -= 14
-        else:
-            element_count -= 13
-        # end if
-
-        while element_count > 0:
-            n_pages += 1
-            element_count -= 13
-        # end while
-
-        return n_pages
+        return len(self.pages)
     # end get_n_pages
 
     # Get active panel
@@ -514,8 +568,14 @@ class Panel(Item):
         """
         Renders the current panel on the Stream Deck.
         """
+        # Log
+        console.log(f"Panel({self.name})::render")
+
         # Clear the deck
         self.renderer.clear_deck()
+
+        # Index shifting
+        key_shift = self._compute_key_shift()
 
         # If we are on the first page, show "Upper" buttons
         if self.current_page == 0 and self.parent:
@@ -523,24 +583,22 @@ class Panel(Item):
         # end if
 
         # Not on first page, show "Previous" button
-        if self.current_page > 0:
+        if self.has_previous_page():
             self.renderer.render_key(0, self.previous_page_icon, "Précédent")
         # end if
 
-        # Render each button
-        for i, item in enumerate(self.items.values()):
-            item_index = i + 1 if self.parent else i
-            if item_index <= 13:
-                item_icon = item.on_item_rendered()
-                console.log(f"item_icon: {item_icon}")
-                if item_icon:
-                    self.renderer.render_key(item_index, item_icon, item.name)
-                # end if
+        # Render each button of current page
+        for i, item_name in enumerate(self.pages[self.current_page]):
+            key_index = i + key_shift
+            item = self.items[item_name]
+            item_icon = item.on_item_rendered()
+            if item_icon:
+                self.renderer.render_key(key_index, item_icon, item.name)
             # end if
         # end for
 
         # More than one page and not at the last
-        if self.n_pages > 1 and self.current_page < self.n_pages - 1:
+        if self.has_next_page():
             self.renderer.render_key(14, self.next_page_icon, "Suivant")
         # end if
 
@@ -584,6 +642,18 @@ class Panel(Item):
     # endregion PUBLIC METHODS
 
     # region PRIVATE METHODS
+
+    # Compute key shifting
+    def _compute_key_shift(self):
+        """
+        Computes the key shift based on the current page.
+        """
+        # If we are on the first page, show "Upper" buttons
+        if (self.current_page == 0 and self.parent) or self.has_previous_page():
+            return 1
+        # end if
+        return 0
+    # end _compute_key_shift
 
     # Load button class
     def _load_button_class(self, filepath):
@@ -651,6 +721,28 @@ class Panel(Item):
         # end try
     # end _load_images
 
+    # Handle special keys
+    def _handle_special_key_pressed(self, key_index):
+        """
+        Handles special keys.
+
+        Args:
+            key_index (int): Index of the key.
+        """
+        # Check special keys
+        if self.has_next_page() and key_index == 14:
+            console.log(f"Panel({self.name})::_handle_special_key_pressed next page")
+            return True
+        elif self.has_previous_page() and key_index == 0:
+            console.log(f"Panel({self.name})::_handle_special_key_pressed previous page")
+            return True
+        elif self.has_parent() and key_index == 0:
+            console.log(f"Panel({self.name})::_handle_special_key_pressed parent")
+            return True
+        # end if
+        return False
+    # end _handle_special_key_pressed
+
     # Handle key change
     def _handle_key_pressed(self, key_index):
         """
@@ -659,9 +751,20 @@ class Panel(Item):
         Args:
             key_index (int): Index of the key that was pressed.
         """
+        # Check special keys
+        if self._handle_special_key_pressed(key_index):
+            return
+        # end if
+
+        # Items on this page
+        page_items = self.pages[self.current_page]
+
         # Item index and item
-        item_index = key_index - 1 if self.parent else key_index
-        item = list(self.items.values())[item_index] if item_index >= 0 else self.parent
+        item_index = key_index
+        item_index = item_index - 1 if self.parent or self.has_previous_page() else item_index
+
+        # Get item
+        item = self.items[page_items[item_index]]
 
         # Log
         console.log(f"Panel({self.name})::handle_key_pressed item {item_index}, item type {item.__class__.__name__}")
@@ -675,7 +778,34 @@ class Panel(Item):
         # end if
     # end handle_key_pressed
 
-    # end handle_key_pressed
+    # Handle special keys
+    def _handle_special_key_released(self, key_index) -> bool:
+        """
+        Handles special keys.
+
+        Args:
+            key_index (int): Index of the key.
+        """
+        # Check special keys
+        if self.has_next_page() and key_index == 14:
+            console.log(f"Panel({self.name})::_handle_special_key_released next page")
+            self.next_page()
+            self.render()
+            return True
+        elif self.has_previous_page() and key_index == 0:
+            console.log(f"Panel({self.name})::_handle_special_key_released previous page")
+            self.previous_page()
+            self.render()
+            return True
+        elif self.has_parent() and key_index == 0:
+            console.log(f"Panel({self.name})::_handle_special_key_released parent")
+            self.set_inactive()
+            self.parent.set_active(True)
+            self.parent.render()
+            return True
+        # end if
+        return False
+    # end _handle_special_key_released
 
     # Handle key released
     def _handle_key_released(self, key_index):
@@ -685,9 +815,20 @@ class Panel(Item):
         Args:
             key_index (int): Index of the key that was pressed.
         """
-        # Item index
-        item_index = key_index - 1 if self.parent else key_index
-        item = list(self.items.values())[item_index] if item_index >= 0 else self.parent
+        # Check special keys
+        if self._handle_special_key_released(key_index):
+            return
+        # end if
+
+        # Items on this page
+        page_items = self.pages[self.current_page]
+
+        # Item index and item
+        item_index = key_index
+        item_index = item_index - 1 if self.parent or self.has_previous_page() else item_index
+
+        # Get item
+        item = self.items[page_items[item_index]]
 
         # Log
         console.log(f"Panel({self.name})::handle_key_released item {item_index}, item type {item.__class__.__name__}")
@@ -700,7 +841,7 @@ class Panel(Item):
             self.renderer.render_key(key_index, item_icon, item.name)
         # end if
 
-        # Key 0, and a parent
+        # Switch to the active panel
         if type(item) is Panel:
             self.set_inactive()
             item.set_active(True)
@@ -708,9 +849,62 @@ class Panel(Item):
         # end if
     # end _handle_key_released
 
+    # Page assignment
+    def _page_assignment(self):
+        """
+        Assigns items to pages.
+        """
+        # Copy items
+        items = list(self.items.keys())
+
+        # How many items on the first page
+        n_items_first_page = 14 if self.parent else 15
+
+        # Remove one item for next page button
+        if len(items) <= n_items_first_page:
+            return {0: items}
+        # end if
+
+        # Current page
+        current_page = 0
+
+        # Pages
+        pages = {}
+
+        # While there are still items to assign
+        while len(items) > 0:
+            # Items on current page
+            n_items = n_items_first_page if current_page == 0 else 14
+
+            # If there are more items than can fit on the page
+            if len(items) > n_items:
+                n_items -= 1
+            # end if
+
+            # Assign the calculated number of items to the current page
+            pages[current_page] = items[:n_items]
+
+            # Remove the assigned items
+            items = items[n_items:]
+
+            # Next page
+            current_page += 1
+        # end while
+
+        return pages
+    # end _page_assigment
+
     # endregion PRIVATE METHODS
 
     # region EVENTS
+
+    # On item rendered
+    def on_panel_activated(self):
+        """
+        Event handler for the "panel_activated" event.
+        """
+        console.log(f"Panel({self.name})::on_panel_activated")
+    # end on_panel_activated
 
     # On item rendered
     def on_item_rendered(self):
@@ -751,7 +945,7 @@ class Panel(Item):
         console.log(f"Panel({self.name})::on_item_released")
 
         # Return icon
-        return self.get_icon()
+        return None
     # end on_item_released
 
     # On key pressed
@@ -789,6 +983,30 @@ class Panel(Item):
             self._handle_key_released(key_index)
         # end if
     # end on_key_released
+
+    # On periodic tick
+    def on_periodic_tick(self):
+        """
+        Event handler for the "periodic" event.
+        """
+        # Log
+        console.log(f"Panel({self.name})::on_periodic_tick")
+
+        # Key shift
+        key_shift = self._compute_key_shift()
+
+        # Propagate to children
+        for i, item_name in enumerate(self.pages[self.current_page]):
+            key_index = i + key_shift
+            item = self.items[item_name]
+            if isinstance(item, Button):
+                tick_icon = item.on_periodic_tick()
+                if tick_icon:
+                    self.renderer.render_key(key_index, tick_icon, item.name)
+                # end if
+            # end if
+        # end for
+    # end on_periodic_tick
 
     # endregion EVENTS
 

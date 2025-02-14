@@ -64,6 +64,7 @@ class PanelRegistry:
         # Subscribe to events
         self._event_bus.subscribe("key_change", self._on_key_change)
         self._event_bus.subscribe("initialized", self._on_initialize)
+        self._event_bus.subscribe("periodic", self._on_periodic_tick)
         self._event_bus.subscribe("exit", self._on_exit)
     # end __init__
 
@@ -133,18 +134,32 @@ class PanelRegistry:
         Event handler for the "initialized" event.
         """
         # Log
-        console.log(f"PanelRegistry::_on_initialize")
+        console.log(f"[yellow bold]PanelRegistry[/]::_on_initialize")
 
         # Render the current panel
         self.render()
     # end _on_initialize
+
+    # On periodic tick
+    def _on_periodic_tick(self):
+        """
+        Event handler for the "periodic" event.
+        """
+        console.log(f"[yellow bold]PanelRegistry[/]::_on_periodic_tick")
+
+        # Active panel
+        active_panel = self._get_active_panel()
+
+        # Periodic tick
+        active_panel.on_periodic_tick()
+    # end _on_periodic_tick
 
     # On exit
     def _on_exit(self):
         """
         Event handler for the "exit" event.
         """
-        console.log(f"PanelRegistry::_on_exit")
+        console.log(f"[yellow bold]PanelRegistry[/]::_on_exit")
         # self._deck_renderer.clear_deck()
     # end _on_exit
 
@@ -156,7 +171,7 @@ class PanelRegistry:
         Args:
             key_index (int): Index of the key that was pressed.
         """
-        console.log(f"PanelRegistry::_on_key_change {key_index} state {state}")
+        console.log(f"[yellow bold]PanelRegistry[/]::_on_key_change {key_index} state {state}")
 
         # Active panel
         active_panel = self._get_active_panel()

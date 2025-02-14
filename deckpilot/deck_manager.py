@@ -25,6 +25,7 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 # Imports
 import logging
 import signal
+import time
 import threading
 from rich.console import Console
 from StreamDeck.DeviceManager import DeviceManager
@@ -183,6 +184,10 @@ class DeckManager:
             # Set the key callback
             self.deck.set_key_callback(self._key_change_callback)
 
+            # Start the periodic event thread
+            event_interval = 2  # Send event every 5 seconds
+            threading.Thread(target=self._send_periodic_event, args=(event_interval,), daemon=True).start()
+
             # Start the key event listener
             for t in threading.enumerate():
                 try:
@@ -213,6 +218,23 @@ class DeckManager:
         # Log
         console.log(f"Deck {deck.id()} Key {key} = {state}")
     # end _update_key_image
+
+    # Callback for periodic event
+    def _send_periodic_event(self, interval):
+        """
+        Callback for periodic event
+
+        Args:
+        - interval: int - the interval in seconds
+        """
+        while True:
+            # Publish the periodic event
+            self._event_bus.publish("periodic", ())
+
+            # Sleep
+            time.sleep(interval)
+        # end while
+    # end _send_periodic_event
 
     # Callback for state change of a key
     def _key_change_callback(self, deck, key, state):
