@@ -94,6 +94,6 @@ if __name__ == "__main__":
     )
 
     # Main loop
-    deck_manager.main()
+    deck_manager.main(config['general'].get('clock_tick_interval', 2))
 # end if
 

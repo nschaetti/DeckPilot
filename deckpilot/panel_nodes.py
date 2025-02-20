@@ -27,7 +27,7 @@ import abc
 import os
 import importlib
 import importlib.util
-from typing import Any
+from typing import Any, Optional, Dict
 
 import toml
 from pathlib import Path
@@ -71,6 +71,10 @@ class Item(abc.ABC):
         self.path = path
         self.parent = parent
         self.default_icon = default_icon
+        self.icons = {}
+
+        # Load icons
+        self._load_icons()
     # end __init__
 
     # region PROPERTIES
@@ -78,6 +82,43 @@ class Item(abc.ABC):
     # endregion PROPERTIES
 
     # region PUBLIC METHODS
+
+    # Load icon
+    def load_icon(self, path):
+        """
+        Loads an icon from a file.
+
+        Args:
+            path (str): Path to the icon file.
+        """
+        return load_image(path)
+    # end load_icon
+
+    # Get icon path
+    def get_icon_path(self, state=None):
+        """
+        Get the icon path for the item.
+
+        Args:
+            state (str): State of the button.
+        """
+        for ext in ["svg", "png"]:
+            # Icon path
+            if state:
+                icon_path = Path(self.path).parent / f"{self.name}_{state}.{ext}"
+            else:
+                icon_path = Path(self.path).parent / f"{self.name}.{ext}"
+            # end if
+            icon_path = str(icon_path)
+
+            # Load icon
+            if os.path.exists(icon_path):
+                return icon_path
+            # end if
+        # end for
+
+        return None
+    # end get_icon_path
 
     # Get icon
     def get_icon(self, state=None):
@@ -107,6 +148,55 @@ class Item(abc.ABC):
 
     # endregion PUBLIC METHODS
 
+    # region PRIVATE METHODS
+
+    # Add icon
+    def _add_icon(self, state, icon):
+        """
+        Adds an icon to the item.
+
+        Args:
+            state (str): State of the icon.
+            icon (PIL.Image): Icon image.
+        """
+        self.icons[state] = icon
+    # end _add_icon
+
+    # Add icon by path
+    def _add_icon_by_path(self, state, path):
+        """
+        Adds an icon to the item by path.
+
+        Args:
+            state (str): State of the icon.
+            path (str): Path to the icon file.
+        """
+        console.log(f"Item {self.name}, adding icon {path} for state {state}")
+        icon = load_image(path)
+        self._add_icon(state, icon)
+    # end _add_icon_by_path
+
+    # Load icons
+    def _load_icons(self):
+        """
+        Loads icons for the item.
+        """
+        icons = {}
+
+        # List all files with the item name inside
+        for file_name in os.listdir(os.path.dirname(self.path)):
+            if file_name.startswith(self.name) and (file_name.endswith(".png") or file_name.endswith(".svg")):
+                # State is after __
+                state = file_name.split("__")[-1].split(".")[0]
+
+                # Add icon
+                self._add_icon_by_path(state, os.path.join(os.path.dirname(self.path), file_name))
+            # end if
+        # end for
+    # end _load_icons
+
+    # endregion PRIVATE METHODS
+
     # region EVENTS
 
     # On item rendered
@@ -115,7 +205,7 @@ class Item(abc.ABC):
         """
         Event handler for the "item_rendered" event.
         """
-        ...
+        return self.get_icon("inactive")
     # end on_item_rendered
 
     # On item pressed
@@ -124,7 +214,7 @@ class Item(abc.ABC):
         """
         Event handler for the "item_pressed" event.
         """
-        ...
+        return self.get_icon("pressed")
     # end on_item_pressed
 
     # On item released
@@ -133,7 +223,7 @@ class Item(abc.ABC):
         """
         Event handler for the "item_released" event.
         """
-        ...
+        return self.get_icon("inactive")
     # end on_item_released
 
     # On periodic tick
@@ -171,7 +261,7 @@ class Button(Item):
             name,
             path,
             parent,
-            load_package_icon("button_default.svg")
+            default_icon=load_package_icon("button_default.svg")
         )
 
         # Pressed
@@ -271,7 +361,10 @@ class Panel(Item):
             parent,
             default_icon=load_package_icon("folder_default.svg")
         )
+
+        # Log
         console.log(f"Panel {name} created.")
+
         # Attributes
         self.items = {}
         self.renderer = renderer
@@ -362,6 +455,13 @@ class Panel(Item):
         """
         Set the panel to inactive.
         """
+        # Deactivated event
+        if self.active:
+            console.log(f"Panel({self.name})::set_inactive")
+            self.on_panel_deactivated()
+        # end if
+
+        # Set inactive
         self.active = False
     # end set_inactive
 
@@ -370,9 +470,10 @@ class Panel(Item):
         """
         Moves to the next page in the panel.
         """
+        # If there is a next page
         if self.current_page < self.n_pages - 1:
+            self.on_page_changed(self.current_page, self.current_page + 1)
             self.current_page += 1
-            # self.render()
         # end if
     # end next_page
 
@@ -382,8 +483,8 @@ class Panel(Item):
         Moves to the previous page in the panel.
         """
         if self.current_page > 0:
+            self.on_page_changed(self.current_page, self.current_page - 1)
             self.current_page -= 1
-            # self.render()
         # end if
     # end previous_page
 
@@ -898,13 +999,33 @@ class Panel(Item):
 
     # region EVENTS
 
-    # On item rendered
+    # On panel activated
     def on_panel_activated(self):
         """
         Event handler for the "panel_activated" event.
         """
         console.log(f"Panel({self.name})::on_panel_activated")
     # end on_panel_activated
+
+    # On panel deactivated
+    def on_panel_deactivated(self):
+        """
+        Event handler for the "panel_deactivated" event.
+        """
+        console.log(f"Panel({self.name})::on_panel_deactivated")
+    # end on_panel_deactivated
+
+    # On page changed
+    def on_page_changed(self, old_page, new_page):
+        """
+        Event handler for the "page_changed" event.
+
+        Args:
+            old_page (int): Old page index.
+            new_page (int): New page index.
+        """
+        console.log(f"Panel({self.name})::on_page_changed {old_page} -> {new_page}")
+    # end on_page_changed
 
     # On item rendered
     def on_item_rendered(self):

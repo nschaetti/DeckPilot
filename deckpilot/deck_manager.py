@@ -146,7 +146,8 @@ class DeckManager:
 
     # Main
     def main(
-            self
+            self,
+            clock_tick_interval=2
     ):
         """
         Main method for the DeckManager class.
@@ -185,8 +186,9 @@ class DeckManager:
             self.deck.set_key_callback(self._key_change_callback)
 
             # Start the periodic event thread
-            event_interval = 2  # Send event every 5 seconds
-            threading.Thread(target=self._send_periodic_event, args=(event_interval,), daemon=True).start()
+            if clock_tick_interval > 0:
+                threading.Thread(target=self._send_periodic_event, args=(clock_tick_interval,), daemon=True).start()
+            # end if
 
             # Start the key event listener
             for t in threading.enumerate():
