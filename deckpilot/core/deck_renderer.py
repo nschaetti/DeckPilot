@@ -27,7 +27,7 @@ import os
 from PIL import Image, ImageDraw, ImageFont
 from StreamDeck.ImageHelpers import PILHelper
 
-from .utils import load_package_font, load_package_icon
+from deckpilot.utils import load_package_font, load_package_icon
 
 
 # Manage the rendering of the Stream Deck

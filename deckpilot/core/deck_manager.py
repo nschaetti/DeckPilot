@@ -27,14 +27,13 @@ import logging
 import signal
 import time
 import threading
-from rich.console import Console
 from StreamDeck.DeviceManager import DeviceManager
 
 from .deck_renderer import DeckRenderer
 
 
-# Configuration de logging
-console = Console()
+# Logger
+logger = logging.getLogger(__name__)
 
 
 class DeckManager:
@@ -111,7 +110,7 @@ class DeckManager:
 
         # Get StreamDeck(s)
         self._streamdecks = DeviceManager().enumerate()
-        console.log(f"Found {len(self._streamdecks)} Stream Deck(s).")
+        logger.info(f"Found {len(self._streamdecks)} Stream Deck(s).")
 
         # Set brightness
         self._brightness = brightness
@@ -131,7 +130,7 @@ class DeckManager:
 
         # Error if no StreamDeck found
         if deck is None:
-            console.log("ERROR: No matching StreamDeck found!", log_locals=True)
+            logger.info("ERROR: No matching StreamDeck found!")
             exit(1)
         # end if
 
@@ -141,7 +140,7 @@ class DeckManager:
         self._initialized = True
 
         # Log
-        console.log(f"Selected StreamDeck {self._deck} initialized.")
+        logger.info(f"Selected StreamDeck {self._deck} initialized.")
     # end init_deck
 
     # Main
@@ -159,7 +158,7 @@ class DeckManager:
         if self.deck.is_visual():
             # Check that the StreamDeck is initialized
             if not self.initialized:
-                console.log("ERROR: StreamDeck not initialized!", log_locals=True)
+                logger.info("ERROR: StreamDeck not initialized!")
                 return
             # end if
 
@@ -170,7 +169,7 @@ class DeckManager:
             self._renderer.reset_deck()
 
             # Log
-            console.log(
+            logger.info(
                 f"Opened '{self.deck.deck_type()}' "
                 f"device (serial number: '{self.deck.get_serial_number()}', "
                 f"fw: '{self.deck.get_firmware_version()}')"
@@ -199,7 +198,7 @@ class DeckManager:
                 # end try
             # end for
         else:
-            console.log("ERROR: No visual StreamDeck found!", log_locals=True)
+            logger.info("ERROR: No visual StreamDeck found!")
         # end if
     # end main
 
@@ -218,7 +217,7 @@ class DeckManager:
         - state: bool - the key state
         """
         # Log
-        console.log(f"Deck {deck.id()} Key {key} = {state}")
+        logger.info(f"Deck {deck.id()} Key {key} = {state}")
     # end _update_key_image
 
     # Callback for periodic event
@@ -249,7 +248,7 @@ class DeckManager:
         - state: bool - the key state
         """
         # Log
-        # console.log(f"Deck {deck.id()} Key {key} = {state}")
+        # logger.info(f"Deck {deck.id()} Key {key} = {state}")
 
         # Publish the key change event
         self._event_bus.publish("key_change", (deck, key, state))
@@ -264,12 +263,12 @@ class DeckManager:
         self._event_bus.publish("exit", ())
 
         # Close the StreamDeck
-        console.log(f"Closing StreamDeck {self._deck.get_serial_number()}...")
+        logger.info(f"Closing StreamDeck {self._deck.get_serial_number()}...")
         self._deck.reset()
         self._deck.close()
 
         # Log
-        console.log("Exiting...")
+        logger.info("Exiting...")
         exit(0)
     # end _signal_handler
 

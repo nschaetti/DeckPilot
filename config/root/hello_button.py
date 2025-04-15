@@ -26,14 +26,14 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 import os
 from typing import Any
 
-from deckpilot import Button
-from rich.console import Console
+from deckpilot.elements import Button
+from deckpilot.utils import get_logger
 
 from deckpilot.utils import load_image, load_package_icon
 
 
 # Console
-console = Console()
+logger = get_logger()
 
 
 class HelloButton(Button):
@@ -57,7 +57,7 @@ class HelloButton(Button):
             parent (PanelNode): Parent panel.
         """
         super().__init__(name, path, parent)
-        console.log(f"HelloButton {name} created.")
+        logger.info(f"HelloButton {name} created.")
 
         # Blinking state
         self.blinking = 0
@@ -102,7 +102,7 @@ class HelloButton(Button):
         """
         Periodic trick event.
         """
-        console.log(f"[blue bold]{self.__class__.__name__}[/]({self.name})::on_periodic_tick")
+        logger.info(f"[blue bold]{self.__class__.__name__}[/]({self.name})::on_periodic_tick")
 
         # Toggle blinking
         self.blinking = 1 - self.blinking

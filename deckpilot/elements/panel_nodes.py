@@ -27,20 +27,19 @@ import abc
 import os
 import importlib
 import importlib.util
-from typing import Any, Optional, Dict
-
+from typing import Any, Optional, Dict, List
 import toml
+from PIL import Image
 from pathlib import Path
-
-from pex.targets import current
 from rich.console import Console
 from rich.text import Text
 from rich.tree import Tree
 
-from .utils import load_image, load_package_icon
+from deckpilot.utils import load_image, load_package_icon, Logger
+from deckpilot.core import DeckRenderer
 
 
-# Console
+# Logger
 console = Console()
 
 
@@ -53,10 +52,10 @@ class Item(abc.ABC):
     # Constructor
     def __init__(
             self,
-            name,
-            path,
-            parent,
-            default_icon
+            name: str,
+            path: Path,
+            parent: Optional['Panel'] = None,
+            default_icon: Image = None
     ):
         """
         Constructor for the Item class.
@@ -65,7 +64,7 @@ class Item(abc.ABC):
             name (str): Name of the item.
             path (str): Path to the item file.
             parent (PanelNode): Parent panel.
-            default_icon: Default icon for the item.
+            default_icon (Image): Default icon for the item.
         """
         self.name = name
         self.path = path
@@ -74,33 +73,36 @@ class Item(abc.ABC):
         self.icons = {}
 
         # Load icons
+        # We load icon from the path, from pngs and svgs
+        # if the filename start with the name of the item
+        # followed by the state.
         self._load_icons()
     # end __init__
 
     # region PROPERTIES
 
+    # States
+    @property
+    def states(self) -> List[str]:
+        """
+        Get the states of the item.
+
+        :return: Dictionary of states and their icons.
+        """
+        return list(self.icons.keys())
+    # end states
+
     # endregion PROPERTIES
 
     # region PUBLIC METHODS
-
-    # Load icon
-    def load_icon(self, path):
-        """
-        Loads an icon from a file.
-
-        Args:
-            path (str): Path to the icon file.
-        """
-        return load_image(path)
-    # end load_icon
 
     # Get icon path
     def get_icon_path(self, state=None):
         """
         Get the icon path for the item.
 
-        Args:
-            state (str): State of the button.
+        :param state: State of the button.
+        :return: Icon path.
         """
         for ext in ["svg", "png"]:
             # Icon path
@@ -171,7 +173,7 @@ class Item(abc.ABC):
             state (str): State of the icon.
             path (str): Path to the icon file.
         """
-        console.log(f"Item {self.name}, adding icon {path} for state {state}")
+        Logger.inst().debug(f"Item {self.name}, adding icon {path} for state {state}")
         icon = load_image(path)
         self._add_icon(state, icon)
     # end _add_icon_by_path
@@ -181,8 +183,6 @@ class Item(abc.ABC):
         """
         Loads icons for the item.
         """
-        icons = {}
-
         # List all files with the item name inside
         for file_name in os.listdir(os.path.dirname(self.path)):
             if file_name.startswith(self.name) and (file_name.endswith(".png") or file_name.endswith(".svg")):
@@ -287,7 +287,7 @@ class Button(Item):
         Render button
         """
         # Log
-        console.log(f"[blue bold]{self.__class__.__name__}[/]({self.name})::on_item_renderer")
+        Logger.inst().event(self.__class__.__name__, self.name, "on_item_renderer")
 
         # Return icon
         return self.get_icon()
@@ -298,7 +298,7 @@ class Button(Item):
         Event handler for the "on_item_pressed" event.
         """
         # Log
-        console.log(f"[blue bold]{self.__class__.__name__}[/]({self.name})::on_item_pressed")
+        Logger.inst().event(self.__class__.__name__, self.name, "on_item_pressed")
         icon = self.get_icon("pressed")
 
         # Set pressed
@@ -313,7 +313,7 @@ class Button(Item):
         Event handler for the "on_item_released" event.
         """
         # Log
-        console.log(f"[blue bold]{self.__class__.__name__}[/]({self.name})::on_item_released")
+        Logger.inst().event(self.__class__.__name__, self.name, "on_item_released")
 
         # Set pressed
         self._pressed = False
@@ -327,7 +327,7 @@ class Button(Item):
         Event handler for the "periodic" event.
         """
         # Log
-        # console.log(f"[blue bold]{self.__class__.__name__}[/]({self.name})::on_periodic_tick")
+        # Logger.inst().info(f"[blue bold]{self.__class__.__name__}[/]({self.name})::on_periodic_tick")
         return None
     # end on_periodic_tick
 
@@ -344,13 +344,20 @@ class Panel(Item):
     """
 
     # Constructor
-    def __init__(self, name, path, renderer, parent=None, active=False):
+    def __init__(
+            self,
+            name: str,
+            path: Path,
+            renderer: DeckRenderer,
+            parent: Optional['Panel'] = None,
+            active: bool = False
+    ):
         """
         Constructor for the PanelNode class.
 
         Args:
             name (str): Name of the panel.
-            path (str): Path to the panel directory.
+            path (Path): Path to the panel directory.
             renderer (DeckRenderer): Deck renderer instance.
             parent (PanelNode): Parent panel.
             active (bool): Active state.
@@ -363,7 +370,7 @@ class Panel(Item):
         )
 
         # Log
-        console.log(f"Panel {name} created.")
+        Logger.inst().info(f"[{self.__class__.__name__}] Panel {name} created.")
 
         # Attributes
         self.items = {}
@@ -387,7 +394,7 @@ class Panel(Item):
 
         # Compute page assignment
         self.pages = self._page_assignment()
-        console.log(self.pages)
+        Logger.inst().info(self.pages)
     # end __init__
 
     # region PROPERTIES
@@ -442,7 +449,7 @@ class Panel(Item):
         """
         # Activated event
         if active and not self.active:
-            console.log(f"Panel({self.name})::set_active")
+            Logger.inst().event("Panel", self.name, "set_active")
             self.on_panel_activated()
         # end if
 
@@ -457,7 +464,7 @@ class Panel(Item):
         """
         # Deactivated event
         if self.active:
-            console.log(f"Panel({self.name})::set_inactive")
+            Logger.inst().event("Panel", self.name, "set_inactive")
             self.on_panel_deactivated()
         # end if
 
@@ -554,7 +561,7 @@ class Panel(Item):
             button_instance (Button): Button instance.
         """
         if button_instance.name in self.items:
-            console.log(f"[red]Button {button_instance.name} already exists in {self.name}[/]")
+            Logger.inst().info(f"[red]Button {button_instance.name} already exists in {self.name}[/]")
             return
         # end if
         self.items[button_instance.name] = button_instance
@@ -574,7 +581,7 @@ class Panel(Item):
             child (PanelNode): Child panel.
         """
         if child_name in self.items:
-            console.log(f"[red]Child {child_name} already exists in {self.name}[/]")
+            Logger.inst().info(f"[red]Child {child_name} already exists in {self.name}[/]")
             return
         # end if
         self.items[child_name] = child
@@ -612,10 +619,10 @@ class Panel(Item):
             if button_class:
                 button_instance = button_class(name=button_name, path=button_path, parent=self)
                 self.add_button(button_instance)
-                console.log(f"[green]Add button:[/] {button_instance.name}")
+                Logger.inst().info(f"[green]Add button:[/] {button_instance.name}")
             # end if
         else:
-            console.log(f"[red]Button {button_name} not found in {self.name}[/]")
+            Logger.inst().info(f"[red]Button {button_name} not found in {self.name}[/]")
         # end if
     # end load_button
 
@@ -624,7 +631,7 @@ class Panel(Item):
         """
         Loads all button classes from Python files in the panel directory.
         """
-        console.log(f"Loading buttons from {self.path}")
+        Logger.inst().info(f"Loading buttons from {self.path}")
         for entry in os.scandir(self.path):
             if entry.is_file() and entry.name.endswith(".py"):
                 button_name = os.path.splitext(entry.name)[0]
@@ -642,13 +649,13 @@ class Panel(Item):
             child_name (str): Name of the child panel.
         """
         child_path = os.path.join(self.path, child_name)
-        console.log(f"Loading child: {child_path}, {child_name}")
+        Logger.inst().info(f"Loading child: {child_path}, {child_name}")
         if os.path.exists(child_path) and os.path.isdir(child_path) and not (child_name.startswith(".") or (child_name.startswith("__") and child_name.endswith("__"))):
             child = Panel(name=child_name, path=child_path, parent=self, renderer=self.renderer)
             self.add_child(child.name, child)
-            console.log(f"[green]Add child:[/] {child.name} (Parent Panel: {self.name})")
+            Logger.inst().info(f"[green]Add child:[/] {child.name} (Parent Panel: {self.name})")
         else:
-            console.log(f"[red]Child {child_name} not found in {self.name}[/]")
+            Logger.inst().info(f"[red]Child {child_name} not found in {self.name}[/]")
         # end if
     # end load_child
 
@@ -670,7 +677,7 @@ class Panel(Item):
         Renders the current panel on the Stream Deck.
         """
         # Log
-        console.log(f"Panel({self.name})::render")
+        Logger.inst().info(f"Panel({self.name})::render")
 
         # Clear the deck
         self.renderer.clear_deck()
@@ -784,7 +791,7 @@ class Panel(Item):
                 # end if
             # end for
         except Exception as e:
-            console.log(f"[red]ERROR loading {filepath}: {e}[/red]")
+            Logger.inst().info(f"[red]ERROR loading {filepath}: {e}[/red]")
         # end try
 
         return None
@@ -817,7 +824,7 @@ class Panel(Item):
             from PIL import Image
             return Image.open(image_path)
         except ImportError:
-            console.log("ERROR: PIL is required to load images.")
+            Logger.inst().info("ERROR: PIL is required to load images.")
             return None
         # end try
     # end _load_images
@@ -832,13 +839,13 @@ class Panel(Item):
         """
         # Check special keys
         if self.has_next_page() and key_index == 14:
-            console.log(f"Panel({self.name})::_handle_special_key_pressed next page")
+            Logger.inst().event("Panel", self.name, "_handle_special_key_pressed", action="next_page")
             return True
         elif self.has_previous_page() and key_index == 0:
-            console.log(f"Panel({self.name})::_handle_special_key_pressed previous page")
+            Logger.inst().event("Panel", self.name, "_handle_special_key_pressed", action="previous_page")
             return True
         elif self.has_parent() and key_index == 0:
-            console.log(f"Panel({self.name})::_handle_special_key_pressed parent")
+            Logger.inst().event("Panel", self.name, "_handle_special_key_pressed", action="parent")
             return True
         # end if
         return False
@@ -864,11 +871,14 @@ class Panel(Item):
         item_index = key_index
         item_index = item_index - 1 if self.parent or self.has_previous_page() else item_index
 
+        # Debug
+        Logger.inst().event("Panel", self.name, "handle_key_pressed", item=item_index, key_index=key_index)
+
         # Get item
         item = self.items[page_items[item_index]]
 
         # Log
-        console.log(f"Panel({self.name})::handle_key_pressed item {item_index}, item type {item.__class__.__name__}")
+        Logger.inst().event("Panel", self.name, "handle_key_pressed", item=item_index, item_type=item.__class__.__name__)
 
         # Dispatch event
         item_icon = item.on_item_pressed(key_index)
@@ -889,17 +899,17 @@ class Panel(Item):
         """
         # Check special keys
         if self.has_next_page() and key_index == 14:
-            console.log(f"Panel({self.name})::_handle_special_key_released next page")
+            Logger.inst().event("Panel", self.name, "_handle_special_key_released", action="next_page")
             self.next_page()
             self.render()
             return True
         elif self.has_previous_page() and key_index == 0:
-            console.log(f"Panel({self.name})::_handle_special_key_released previous page")
+            Logger.inst().event("Panel", self.name, "_handle_special_key_released", action="previous_page")
             self.previous_page()
             self.render()
             return True
         elif self.has_parent() and key_index == 0:
-            console.log(f"Panel({self.name})::_handle_special_key_released parent")
+            Logger.inst().event("Panel", self.name, "_handle_special_key_released", action="parent")
             self.set_inactive()
             self.parent.set_active(True)
             self.parent.render()
@@ -932,7 +942,7 @@ class Panel(Item):
         item = self.items[page_items[item_index]]
 
         # Log
-        console.log(f"Panel({self.name})::handle_key_released item {item_index}, item type {item.__class__.__name__}")
+        Logger.inst().info(f"Panel({self.name})::handle_key_released item {item_index}, item type {item.__class__.__name__}")
 
         # Dispatch event
         item_icon = item.on_item_released(key_index)
@@ -1004,7 +1014,7 @@ class Panel(Item):
         """
         Event handler for the "panel_activated" event.
         """
-        console.log(f"Panel({self.name})::on_panel_activated")
+        Logger.inst().info(f"[magenta bold]Panel({self.name})[/]::on_panel_activated")
     # end on_panel_activated
 
     # On panel deactivated
@@ -1012,7 +1022,7 @@ class Panel(Item):
         """
         Event handler for the "panel_deactivated" event.
         """
-        console.log(f"Panel({self.name})::on_panel_deactivated")
+        Logger.inst().info(f"[magenta bold]Panel({self.name})[/]::on_panel_deactivated")
     # end on_panel_deactivated
 
     # On page changed
@@ -1024,7 +1034,7 @@ class Panel(Item):
             old_page (int): Old page index.
             new_page (int): New page index.
         """
-        console.log(f"Panel({self.name})::on_page_changed {old_page} -> {new_page}")
+        Logger.inst().info(f"[magenta bold]Panel({self.name})[/]::on_page_changed {old_page} -> {new_page}")
     # end on_page_changed
 
     # On item rendered
@@ -1033,7 +1043,7 @@ class Panel(Item):
         Event handler for the "item_rendered" event.
         """
         # Log
-        console.log(f"Panel({self.name})::on_item_renderer")
+        Logger.inst().info(f"[magenta bold]Panel({self.name})[/]::on_item_renderer")
 
         # Return icon
         return self.get_icon()
@@ -1048,7 +1058,7 @@ class Panel(Item):
             key_index (int): Index of the key that was pressed.
         """
         # Log
-        console.log(f"Panel({self.name})::on_item_pressed")
+        Logger.inst().info(f"[magenta bold]Panel({self.name})[/]::on_item_pressed")
 
         # Return icon
         return self.get_icon("pressed")
@@ -1063,7 +1073,7 @@ class Panel(Item):
             key_index (int): Index of the key that was released.
         """
         # Log
-        console.log(f"Panel({self.name})::on_item_released")
+        Logger.inst().info(f"[magenta bold]Panel({self.name})[/]::on_item_released")
 
         # Return icon
         return None
@@ -1079,7 +1089,7 @@ class Panel(Item):
             state (bool): State of the key (pressed or released
         """
         # Log
-        console.log(f"Panel({self.name})::on_key_pressed {key_index}")
+        Logger.inst().info(f"[magenta bold]Panel({self.name})[/]::on_key_pressed {key_index}")
 
         # If active, handle key change
         if self.active:
@@ -1097,7 +1107,7 @@ class Panel(Item):
             state (bool): State of the key (pressed or released
         """
         # Log
-        console.log(f"Panel({self.name})::on_key_released {key_index}")
+        Logger.inst().info(f"Panel({self.name})::on_key_released {key_index}")
 
         # If active, handle key change
         if self.active:
@@ -1111,7 +1121,7 @@ class Panel(Item):
         Event handler for the "periodic" event.
         """
         # Log
-        console.log(f"Panel({self.name})::on_periodic_tick")
+        Logger.inst().info(f"Panel({self.name})::on_periodic_tick")
 
         # Key shift
         key_shift = self._compute_key_shift()

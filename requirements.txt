@@ -2,3 +2,6 @@ toml~=0.10.2
 pex~=2.32.1
 streamdeck~=0.9.6
 pillow~=11.1.0
+rich~=13.9.4
+setuptools~=75.8.0
+CairoSVG~=2.7.1

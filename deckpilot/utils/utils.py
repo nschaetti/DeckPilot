@@ -24,6 +24,7 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 
 # Imports
 import os
+import logging
 import cairosvg
 import importlib.resources
 from rich.console import Console
@@ -32,8 +33,8 @@ from PIL import ImageFont
 from io import BytesIO
 
 
-# Console
-console = Console()
+# Logger
+logger = logging.getLogger(__name__)
 
 
 # Load image
@@ -65,7 +66,7 @@ def load_image(image_path):
     try:
         return Image.open(image_filename)
     except ImportError:
-        console.log("ERROR: PIL is required to load images.")
+        logging.error("ERROR: PIL is required to load images.")
         return None
     # end try
 # end load_images
@@ -76,11 +77,8 @@ def load_package_icon(icon_name):
     """
     Load an icon from the package.
 
-    Args:
-        icon_name (str): Name of the icon to load.
-
-    Returns:
-        PIL.Image: The loaded icon.
+    :param icon_name: Name of the icon file (e.g., "icon.svg").
+    :return: Loaded image as PIL.Image object.
     """
     try:
         # Determine file extension
@@ -101,10 +99,10 @@ def load_package_icon(icon_name):
                 raise ValueError(f"Unsupported file type: {file_ext}")
             # end if
     except ImportError:
-        console.log("[red]ERROR: PIL and CairoSVG are required to load images.[/red]")
+        logging.log("[red]ERROR: PIL and CairoSVG are required to load images.[/red]")
         return None
     except Exception as e:
-        console.log(f"[red]ERROR: Failed to load {icon_name}: {e}[/red]")
+        logging.log(f"[red]ERROR: Failed to load {icon_name}: {e}[/red]")
         return None
     # end try
 # end load_package_icon
@@ -125,7 +123,7 @@ def load_package_font(font_name, size):
         with importlib.resources.open_binary("deckpilot.assets", font_name) as file:
             return ImageFont.truetype(file, size)
     except Exception as e:
-        print(f"Erreur: Impossible de charger la police {font_name}. {e}")
+        logger.error(f"Erreur: Impossible de charger la police {font_name}. {e}")
         return ImageFont.load_default()
     # end try
 # end load_package_font

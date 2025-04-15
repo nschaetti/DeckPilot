@@ -23,19 +23,13 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 """
 
 # Imports
-import os
-import importlib.util
+from pathlib import Path
 import logging
-from rich.console import Console
-from rich.tree import Tree
-from rich.console import Console
-from rich.text import Text
-
-from .panel_nodes import Panel
+from deckpilot.elements import Panel
 
 
-# Console
-console = Console()
+# Logger
+logger = logging.getLogger()
 
 
 # PanelRegistry
@@ -44,7 +38,7 @@ class PanelRegistry:
     # Constructor
     def __init__(
             self,
-            base_path,
+            base_path: Path,
             event_bus,
             deck_renderer
     ):
@@ -52,14 +46,22 @@ class PanelRegistry:
         Constructor for the PanelRegistry class.
 
         Args:
-            base_path (str): Path to the directory where the buttons and sub-panels are stored.
+            base_path (Path): Path to the directory where the buttons and sub-panels are stored.
             event_bus (EventBus): Event bus for the application.
             deck_renderer (DeckRenderer): Deck renderer instance.
         """
         self._event_bus = event_bus
         self.base_path = base_path
-        self.root = Panel("root", base_path, parent=None, renderer=deck_renderer, active=True)
         self._deck_renderer = deck_renderer
+
+        # Load the root panel
+        self.root = Panel(
+            name="root",
+            path=base_path,
+            parent=None,
+            renderer=deck_renderer,
+            active=True
+        )
 
         # Subscribe to events
         self._event_bus.subscribe("key_change", self._on_key_change)
@@ -86,7 +88,7 @@ class PanelRegistry:
             if panel_name in current_node.sub_panels:
                 current_node = current_node.sub_panels[panel_name]
             else:
-                console.log(f"WARNING: Panel '{panel_name}' not found in hierarchy.")
+                logger.info(f"WARNING: Panel '{panel_name}' not found in hierarchy.", extra={"markup": True})
                 return None
             # end if
         # end for
@@ -134,7 +136,7 @@ class PanelRegistry:
         Event handler for the "initialized" event.
         """
         # Log
-        console.log(f"[yellow bold]PanelRegistry[/]::_on_initialize")
+        logger.info(f"[yellow bold]PanelRegistry[/]::_on_initialize", extra={"markup": True})
 
         # Render the current panel
         self.render()
@@ -145,7 +147,7 @@ class PanelRegistry:
         """
         Event handler for the "periodic" event.
         """
-        console.log(f"[yellow bold]PanelRegistry[/]::_on_periodic_tick")
+        logger.info(f"[magenta bold]PanelRegistry[/]::_on_periodic_tick", extra={"markup": True})
 
         # Active panel
         active_panel = self._get_active_panel()
@@ -159,7 +161,7 @@ class PanelRegistry:
         """
         Event handler for the "exit" event.
         """
-        console.log(f"[yellow bold]PanelRegistry[/]::_on_exit")
+        logger.info(f"[magenta bold]PanelRegistry[/]::_on_exit", extra={"markup": True})
         # self._deck_renderer.clear_deck()
     # end _on_exit
 
@@ -171,7 +173,7 @@ class PanelRegistry:
         Args:
             key_index (int): Index of the key that was pressed.
         """
-        console.log(f"[yellow bold]PanelRegistry[/]::_on_key_change {key_index} state {state}")
+        logger.info(f"[magenta bold]PanelRegistry[/]::_on_key_change {key_index} state {state}", extra={"markup": True})
 
         # Active panel
         active_panel = self._get_active_panel()

@@ -23,59 +23,63 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 """
 
 # Imports
-from deckpilot.elements import Button
-from deckpilot.utils import get_logger
+import logging
+from StreamDeck.ImageHelpers import PILHelper
 
 
-# Console
-logger = get_logger()
+# Logger
+logger = logging.getLogger(__name__)
 
 
-class Button12(Button):
+# Render a panel on the Stream Deck
+def render_panel(deck, panel_node):
     """
-    Button that says hello
+    Render the current panel on the Stream Deck.
+
+    Args:
+    - deck: StreamDeck - the StreamDeck instance
+    - panel_node: PanelNode - the panel to display
     """
+    logger.info(f"Rendering panel: {panel_node.name}")
 
-    # Constructor
-    def __init__(
-            self,
-            name,
-            path,
-            parent
-    ):
-        """
-        Constructor for the Button class.
+    # Get all items in the panel (buttons + sub-panels)
+    items = list(panel_node.buttons.items()) + list(panel_node.sub_panels.items())
 
-        Args:
-            name (str): Name of the button.
-            path (str): Path to the button file.
-            parent (PanelNode): Parent panel.
-        """
-        super().__init__(name, path, parent)
-        logger.info(f"{self.__class__.__name__} {name} created.")
-    # end __init__
+    # Sort to keep a consistent order
+    items.sort()
 
-    def on_button_rendered(self):
-        """
-        Render button
-        """
-        logger.info(f"Button {self.name} rendered")
-    # end on_button_rendered
+    # Get deck size
+    key_count = deck.key_count()
 
-    def on_button_pressed(self, key_index):
-        """
-        Event handler for the "button_pressed" event.
-        """
-        logger.info(f"Button {self.name} pressed")
-    # end on_button_pressed
+    # Reset all keys
+    deck.reset()
 
-    def on_button_released(self, key_index):
-        """
-        Event handler for the "button_released" event.
-        """
-        logger.info(f"Button {self.name} released")
-    # end on_button_released
+    # Assign items to keys
+    for i in range(min(len(items), key_count)):
+        name, data = items[i]
 
-# end Button12
+        # It's a button
+        if isinstance(data, tuple):  # It's a button
+            script_path, icon = data
+        else:
+            script_path, icon = None, data.icon
+        # end if
+
+        # Convert image to Stream Deck format
+        if icon:
+            image = PILHelper.create_scaled_image(deck, icon, margins=[5, 5, 5, 5])
+            key_image = PILHelper.to_native_format(deck, image)
+        else:
+            key_image = PILHelper.create_blank_image(deck)
+        # end if
+
+        # Set key image
+        deck.set_key_image(i, key_image)
+    # end for
+
+    # Store current panel
+    deck.current_panel = panel_node
+# end render_panel
+
 
 

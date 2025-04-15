@@ -3,8 +3,8 @@
 # StreamDeck configuration
 [streamdeck]
 brightness = 30
-# Ajout de la spécification du StreamDeck
-device_index = 0  # Ou utilisez serial_number = "1234567890"
+# Next is the device index. You can find the index by running the script and checking the logs.
+device_index = 0  # You can also use serial_number = "1234567890"
 
 [general]
 clock_tick_interval = 0
