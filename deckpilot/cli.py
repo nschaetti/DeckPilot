@@ -19,7 +19,6 @@
 import typer
 import toml
 from pathlib import Path
-from rich.console import Console
 from rich.traceback import install
 
 from deckpilot.utils.logger import setup_logger
@@ -56,12 +55,11 @@ def start(
     :param log_level: Logging level (DEBUG, INFO, WARNING, ERROR)
     """
     # Setup logger
-    print(f"Log level: {log_level}")
     logger = setup_logger(level=log_level)
 
     # Load the configuration
+    logger.info(f"Loading configuration from {config}")
     config = load_config(config)
-    logger.info(f"Configuration loaded from {config}")
     logger.debug(f"Configuration: {config}")
 
     # Configuration of the Stream Deck

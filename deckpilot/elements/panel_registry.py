@@ -26,14 +26,14 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 from pathlib import Path
 import logging
 from deckpilot.elements import Panel
-
-
-# Logger
-logger = logging.getLogger()
+from deckpilot.utils import Logger
 
 
 # PanelRegistry
 class PanelRegistry:
+    """
+    PanelRegistry is responsible for managing the hierarchy of panels and buttons.
+    """
 
     # Constructor
     def __init__(
@@ -45,11 +45,14 @@ class PanelRegistry:
         """
         Constructor for the PanelRegistry class.
 
-        Args:
-            base_path (Path): Path to the directory where the buttons and sub-panels are stored.
-            event_bus (EventBus): Event bus for the application.
-            deck_renderer (DeckRenderer): Deck renderer instance.
+        :param base_path: Path to the directory where the buttons and sub-panels are stored.
+        :type base_path: Path
+        :param event_bus: Event bus for the application.
+        :type event_bus: EventBus
+        :param deck_renderer: Deck renderer instance.
+        :type deck_renderer: DeckRenderer
         """
+        # Properties
         self._event_bus = event_bus
         self.base_path = base_path
         self._deck_renderer = deck_renderer
@@ -77,18 +80,17 @@ class PanelRegistry:
         """
         Retrieves a panel node based on a list representing the path.
 
-        Args:
-            path_list (list): List of panel names representing the path.
-
-        Returns:
-            PanelNode or None: The corresponding panel node, or None if not found.
+        :param path_list: List of panel names representing the path.
+        :type path_list: list
+        :return: The corresponding panel node, or None if not found.
+        :rtype: PanelNode or None
         """
         current_node = self.root
         for panel_name in path_list:
             if panel_name in current_node.sub_panels:
                 current_node = current_node.sub_panels[panel_name]
             else:
-                logger.info(f"WARNING: Panel '{panel_name}' not found in hierarchy.", extra={"markup": True})
+                Logger.inst().warn(f"WARNING: Panel '{panel_name}' not found in hierarchy.", extra={"markup": True})
                 return None
             # end if
         # end for
@@ -136,7 +138,7 @@ class PanelRegistry:
         Event handler for the "initialized" event.
         """
         # Log
-        logger.info(f"[yellow bold]PanelRegistry[/]::_on_initialize", extra={"markup": True})
+        Logger.inst().event(self.__class__.__name__, "main", "on_initialize")
 
         # Render the current panel
         self.render()
@@ -146,8 +148,9 @@ class PanelRegistry:
     def _on_periodic_tick(self):
         """
         Event handler for the "periodic" event.
+        This method is called periodically according to the configuration.
         """
-        logger.info(f"[magenta bold]PanelRegistry[/]::_on_periodic_tick", extra={"markup": True})
+        Logger.inst().event(self.__class__.__name__, "main", "on_periodic_tick")
 
         # Active panel
         active_panel = self._get_active_panel()
@@ -160,20 +163,23 @@ class PanelRegistry:
     def _on_exit(self):
         """
         Event handler for the "exit" event.
+        This method is called when the application is exiting.
         """
-        logger.info(f"[magenta bold]PanelRegistry[/]::_on_exit", extra={"markup": True})
-        # self._deck_renderer.clear_deck()
+        Logger.inst().event(self.__class__.__name__, "main", "on_exit")
     # end _on_exit
 
     # On key change
     def _on_key_change(self, deck, key_index, state):
         """
         Event handler for the "key_change" event.
+        This method is called when the state of a key changes.
 
-        Args:
-            key_index (int): Index of the key that was pressed.
+        :param deck: The StreamDeck instance.
+        :type deck: StreamDeck
+        :param key_index: The index of the key that changed.
+        :type key_index: int
         """
-        logger.info(f"[magenta bold]PanelRegistry[/]::_on_key_change {key_index} state {state}", extra={"markup": True})
+        Logger.inst().event(self.__class__.__name__, "main", "_on_key_change", key_index=key_index, state=state)
 
         # Active panel
         active_panel = self._get_active_panel()

@@ -29,11 +29,9 @@ import time
 import threading
 from StreamDeck.DeviceManager import DeviceManager
 
+from deckpilot.utils import Logger
+
 from .deck_renderer import DeckRenderer
-
-
-# Logger
-logger = logging.getLogger(__name__)
 
 
 class DeckManager:
@@ -41,18 +39,26 @@ class DeckManager:
     Manages the Stream Deck device.
     """
 
-    def __init__(self, event_bus):
+    def __init__(
+            self,
+            event_bus
+    ):
         """
         Constructor for the DeckManager class.
+
+        :param event_bus: Event bus to communicate with other components.
+        :type event_bus: EventBus
         """
         self._event_bus = event_bus
         self._deck = None
-        self._streamdesks = None
+        self._stream_decks = None
         self._serial_number = None
         self._brightness = 30
         self._initialized = False
-        self._key_change_callbacks = list()
         self._renderer = DeckRenderer(self)
+
+        # Callbacks
+        self._key_change_callbacks = list()
     # end __init__
 
     # region PROPERTIES
@@ -83,14 +89,14 @@ class DeckManager:
 
     # endregion PROPERTIES
 
-    # region PUBLIC METHODS
+    # region PUBLIC
 
     def add_key_change_callback(self, callback):
         """
-        Add a key change callback.
+        Add a key change function to the list of callbacks.
 
-        Args:
-        - callback (function): The callback function.
+        :param callback: The callback function.
+        :type callback: function
         """
         self._key_change_callbacks.append(callback)
     # end add_key_change_callback
@@ -100,17 +106,21 @@ class DeckManager:
         """
         Initialize the Stream Deck device.
 
-        Args:
-        - serial_number (str): Serial number of the Stream Deck.
-        - device_index (int): Index of the Stream Deck.
-        - brightness (int): Brightness level for the Stream Deck.
+        :param serial_number: Serial number of the Stream Deck.
+        :type serial_number: str
+        :param device_index: Index of the Stream Deck.
+        :type device_index: int
+        :param brightness: Brightness level for the Stream Deck.
+        :type brightness: int
+        :raise RuntimeError: If no matching Stream Deck is found.
         """
         # Capture signal interrupt
         signal.signal(signal.SIGINT, self._signal_handler)
 
         # Get StreamDeck(s)
-        self._streamdecks = DeviceManager().enumerate()
-        logger.info(f"Found {len(self._streamdecks)} Stream Deck(s).")
+        self._stream_decks = DeviceManager().enumerate()
+        Logger().inst().info(f"Found {len(self._stream_decks)} Stream Deck(s).")
+        Logger().inst().debug(f"StreamDecks found: {self._stream_decks}")
 
         # Set brightness
         self._brightness = brightness
@@ -118,20 +128,20 @@ class DeckManager:
         # Find the specific StreamDeck
         deck = None
         if serial_number:
-            for d in self._streamdecks:
+            for d in self._stream_decks:
                 if d.get_serial_number() == serial_number:
                     deck = d
                     break
                 # end if
             # end for
-        elif device_index is not None and 0 <= device_index < len(self._streamdecks):
-            deck = self._streamdecks[device_index]
+        elif device_index is not None and 0 <= device_index < len(self._stream_decks):
+            deck = self._stream_decks[device_index]
         # end if
 
         # Error if no StreamDeck found
         if deck is None:
-            logger.info("ERROR: No matching StreamDeck found!")
-            exit(1)
+            Logger().inst().fatal("ERROR: No matching StreamDeck found!")
+            raise RuntimeError("No matching StreamDeck found!")
         # end if
 
         # Set deck
@@ -140,7 +150,7 @@ class DeckManager:
         self._initialized = True
 
         # Log
-        logger.info(f"Selected StreamDeck {self._deck} initialized.")
+        Logger().inst().info(f"Selected StreamDeck {self._deck} initialized.")
     # end init_deck
 
     # Main
@@ -158,7 +168,7 @@ class DeckManager:
         if self.deck.is_visual():
             # Check that the StreamDeck is initialized
             if not self.initialized:
-                logger.info("ERROR: StreamDeck not initialized!")
+                Logger().inst().info("ERROR: StreamDeck not initialized!")
                 return
             # end if
 
@@ -169,7 +179,7 @@ class DeckManager:
             self._renderer.reset_deck()
 
             # Log
-            logger.info(
+            Logger().inst().info(
                 f"Opened '{self.deck.deck_type()}' "
                 f"device (serial number: '{self.deck.get_serial_number()}', "
                 f"fw: '{self.deck.get_firmware_version()}')"
@@ -198,27 +208,33 @@ class DeckManager:
                 # end try
             # end for
         else:
-            logger.info("ERROR: No visual StreamDeck found!")
+            Logger().inst().info("ERROR: No visual StreamDeck found!")
         # end if
     # end main
 
-    # endregion PUBLIC METHODS
+    # endregion PUBLIC
 
-    # region PRIVATE METHODS
+    # region PRIVATE
 
     # Update touch image
     def _update_key_image(deck, key, state):
         """
         Update touch image
 
-        Args:
-        - deck: StreamDeck - the StreamDeck
-        - key: int - the key index
-        - state: bool - the key state
+        :param deck: the StreamDeck
+        :type deck: StreamDeck
+        :param key: the key index
+        :type key: int
+        :param state: the key state
+        :type state: bool
         """
         # Log
-        logger.info(f"Deck {deck.id()} Key {key} = {state}")
+        Logger().inst().info(f"Deck {deck.id()} Key {key} = {state}")
     # end _update_key_image
+
+    # endregion PRIVATE
+
+    # region EVENTS
 
     # Callback for periodic event
     def _send_periodic_event(self, interval):
@@ -248,7 +264,7 @@ class DeckManager:
         - state: bool - the key state
         """
         # Log
-        # logger.info(f"Deck {deck.id()} Key {key} = {state}")
+        # Logger().inst().info(f"Deck {deck.id()} Key {key} = {state}")
 
         # Publish the key change event
         self._event_bus.publish("key_change", (deck, key, state))
@@ -263,16 +279,16 @@ class DeckManager:
         self._event_bus.publish("exit", ())
 
         # Close the StreamDeck
-        logger.info(f"Closing StreamDeck {self._deck.get_serial_number()}...")
+        Logger().inst().info(f"Closing StreamDeck {self._deck.get_serial_number()}...")
         self._deck.reset()
         self._deck.close()
 
         # Log
-        logger.info("Exiting...")
+        Logger().inst().info("Exiting...")
         exit(0)
     # end _signal_handler
 
-    # endregion PRIVATE METHODS
+    # endregion EVENTS
 
 # end DeckManager
 

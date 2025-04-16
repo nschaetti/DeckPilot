@@ -143,6 +143,7 @@ class Logger:
     def warningg(self, msg):
         """
         Log a warning message.
+        Warning messages are logged for errors that do not lead to program termination.
 
         :param msg: The message to log.
         """
@@ -152,6 +153,7 @@ class Logger:
     def error(self, msg):
         """
         Log an error message.
+        Error messages are logged for errors that do not lead to program termination.
 
         :param msg: The message to log.
         """
@@ -161,11 +163,22 @@ class Logger:
     def critical(self, msg):
         """
         Log a critical message.
+        Critical messages are logged for errors that lead to program termination.
 
         :param msg: The message to log.
         """
         self._log(f"[red bold]CRITICAL\t{msg}[/]", LogLevel.CRITICAL)
     # end critical
+
+    def fatal(self, msg):
+        """
+        Log a fatal message. This is an alias for critical.
+        Fatal messages are logged for error that leads to program termination.
+
+        :param msg: The message to log.
+        """
+        self.critical(msg)
+    # end fatal
 
     def event(
             self,

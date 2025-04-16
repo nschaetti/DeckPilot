@@ -384,17 +384,19 @@ class Panel(Item):
         self.previous_page_icon = load_package_icon("previous_page.svg")
         self.button_default_icon = load_package_icon("button_default.svg")
 
-        # Load buttons and sub-panels
-        if os.path.exists(os.path.join(self.path, "items.toml")):
+        # If I find a items.toml in the directory
+        if (self.path / "items.toml").exists():
+            # I load the items listed in the toml file
             self.load_items()
         else:
+            # Otherwise, I load all items in the directory
             self.load_buttons()
             self.load_children()
         # end if
 
-        # Compute page assignment
+        # We assign a page to each item according to the number of buttons
         self.pages = self._page_assignment()
-        Logger.inst().info(self.pages)
+        Logger.inst().info(f"Assigned pages and elements: {self.pages}")
     # end __init__
 
     # region PROPERTIES
@@ -576,12 +578,13 @@ class Panel(Item):
         """
         Adds a child panel to the panel.
 
-        Args:
-            child_name (str): Name of the child panel.
-            child (PanelNode): Child panel.
+        :param child_name: Name of the child panel.
+        :type child_name: str
+        :param child: Child panel.
+        :type child: PanelNode
         """
         if child_name in self.items:
-            Logger.inst().info(f"[red]Child {child_name} already exists in {self.name}[/]")
+            Logger.inst().warn(f"Child {child_name} already exists in {self.name}")
             return
         # end if
         self.items[child_name] = child
@@ -595,6 +598,7 @@ class Panel(Item):
         if os.path.exists(os.path.join(self.path, "items.toml")):
             items = toml.load(os.path.join(self.path, "items.toml"))
             for item_config in items['items']:
+                Logger.inst().debug(f"Loading item {item_config['name']} of type {item_config['type']}")
                 # If it's a button
                 if item_config['type'] == 'button':
                     self.load_button(item_config['name'])
@@ -645,17 +649,23 @@ class Panel(Item):
         """
         Loads a child panel from the panel directory.
 
-        Args:
-            child_name (str): Name of the child panel.
+        :param child_name: Name of the child panel.
+        :type child_name: str
         """
-        child_path = os.path.join(self.path, child_name)
+        child_path = self.path / child_name
         Logger.inst().info(f"Loading child: {child_path}, {child_name}")
-        if os.path.exists(child_path) and os.path.isdir(child_path) and not (child_name.startswith(".") or (child_name.startswith("__") and child_name.endswith("__"))):
+
+        # If the child has a path directory which is not special (., ..), add it.
+        if (
+                child_path.exists() and child_path.is_dir()
+                and not (str(child_name).startswith(".")
+                         or (str(child_name).startswith("__") and child_name.endswith("__")))
+        ):
             child = Panel(name=child_name, path=child_path, parent=self, renderer=self.renderer)
             self.add_child(child.name, child)
-            Logger.inst().info(f"[green]Add child:[/] {child.name} (Parent Panel: {self.name})")
+            Logger.inst().info(f"Add child: {child.name} (Parent Panel: {self.name})")
         else:
-            Logger.inst().info(f"[red]Child {child_name} not found in {self.name}[/]")
+            Logger.inst().error(f"Child {child_name} not found in {self.name}")
         # end if
     # end load_child
 
@@ -664,8 +674,13 @@ class Panel(Item):
         """
         Loads all child panels from directories in the panel directory.
         """
-        for entry in os.scandir(self.path):
-            if entry.is_dir() and not (entry.name.startswith(".") or (entry.name.startswith("__") and entry.name.endswith("__"))):
+        for entry in os.scandir(str(self.path)):
+            # It's a directory and not a special directory
+            if (
+                    Path(entry.path).is_dir()
+                    and not (entry.name.startswith(".") or (entry.name.startswith("__") and entry.name.endswith("__")))
+            ):
+                # Load child
                 self.load_child(entry.name)
             # end if
         # end for
@@ -791,7 +806,7 @@ class Panel(Item):
                 # end if
             # end for
         except Exception as e:
-            Logger.inst().info(f"[red]ERROR loading {filepath}: {e}[/red]")
+            Logger.inst().error(f"Loading {filepath}: {e}")
         # end try
 
         return None
@@ -942,7 +957,13 @@ class Panel(Item):
         item = self.items[page_items[item_index]]
 
         # Log
-        Logger.inst().info(f"Panel({self.name})::handle_key_released item {item_index}, item type {item.__class__.__name__}")
+        Logger.inst().event(
+            "Panel",
+            self.name,
+            "handle_key_released",
+            item=item_index,
+            item_type=item.__class__.__name__
+        )
 
         # Dispatch event
         item_icon = item.on_item_released(key_index)
@@ -1014,7 +1035,7 @@ class Panel(Item):
         """
         Event handler for the "panel_activated" event.
         """
-        Logger.inst().info(f"[magenta bold]Panel({self.name})[/]::on_panel_activated")
+        Logger.inst().event(self.__class__.__name__, self.name, "on_panel_activated")
     # end on_panel_activated
 
     # On panel deactivated
@@ -1022,7 +1043,7 @@ class Panel(Item):
         """
         Event handler for the "panel_deactivated" event.
         """
-        Logger.inst().info(f"[magenta bold]Panel({self.name})[/]::on_panel_deactivated")
+        Logger.inst().event(self.__class__.__name__, self.name, "on_panel_deactivated")
     # end on_panel_deactivated
 
     # On page changed
@@ -1030,11 +1051,12 @@ class Panel(Item):
         """
         Event handler for the "page_changed" event.
 
-        Args:
-            old_page (int): Old page index.
-            new_page (int): New page index.
+        :param old_page: Old page index.
+        :type old_page: int
+        :param new_page: New page index.
+        :type new_page: int
         """
-        Logger.inst().info(f"[magenta bold]Panel({self.name})[/]::on_page_changed {old_page} -> {new_page}")
+        Logger.inst().event(self.__class__.__name__, self.name, "on_page_changed", old_page=old_page, new_page=new_page)
     # end on_page_changed
 
     # On item rendered
@@ -1043,7 +1065,7 @@ class Panel(Item):
         Event handler for the "item_rendered" event.
         """
         # Log
-        Logger.inst().info(f"[magenta bold]Panel({self.name})[/]::on_item_renderer")
+        Logger.inst().event(self.__class__.__name__, self.name, "on_item_rendered")
 
         # Return icon
         return self.get_icon()
@@ -1073,7 +1095,7 @@ class Panel(Item):
             key_index (int): Index of the key that was released.
         """
         # Log
-        Logger.inst().info(f"[magenta bold]Panel({self.name})[/]::on_item_released")
+        Logger.inst().event(self.__class__.__name__, self.name, "on_item_released", key_index=key_index)
 
         # Return icon
         return None
@@ -1089,7 +1111,7 @@ class Panel(Item):
             state (bool): State of the key (pressed or released
         """
         # Log
-        Logger.inst().info(f"[magenta bold]Panel({self.name})[/]::on_key_pressed {key_index}")
+        Logger.inst().event(self.__class__.__name__, self.name, "on_key_pressed", key_index=key_index)
 
         # If active, handle key change
         if self.active:
@@ -1107,7 +1129,7 @@ class Panel(Item):
             state (bool): State of the key (pressed or released
         """
         # Log
-        Logger.inst().info(f"Panel({self.name})::on_key_released {key_index}")
+        Logger.inst().event(self.__class__.__name__, self.name, "on_key_released", key_index=key_index)
 
         # If active, handle key change
         if self.active:
@@ -1121,7 +1143,7 @@ class Panel(Item):
         Event handler for the "periodic" event.
         """
         # Log
-        Logger.inst().info(f"Panel({self.name})::on_periodic_tick")
+        Logger.inst().event(self.__class__.__name__, self.name, "on_periodic_tick")
 
         # Key shift
         key_shift = self._compute_key_shift()

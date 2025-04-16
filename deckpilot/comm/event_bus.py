@@ -25,6 +25,7 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 from collections import defaultdict
 from typing import Callable, Any
 
+from deckpilot.utils import Logger
 
 
 class EventBus:
@@ -69,7 +70,17 @@ class EventBus:
         """
         if event_type in self._subscribers:
             for callback in self._subscribers[event_type]:
-                callback(*data)
+                if data is None:
+                    Logger.inst().debug(f"EventBus: {event_type} published")
+                    callback()
+                else:
+                    Logger.inst().debug(f"EventBus: {event_type} published with data {data}")
+                    if isinstance(data, tuple):
+                        callback(*data)
+                    else:
+                        callback(data)
+                    # end if
+                # end if
             # end for
         # end if
     # end publish
