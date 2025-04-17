@@ -37,6 +37,7 @@ from rich.tree import Tree
 
 from deckpilot.utils import load_image, load_package_icon, Logger
 from deckpilot.core import DeckRenderer
+from deckpilot.comm import event_bus, EventType
 
 
 # Logger
@@ -71,6 +72,12 @@ class Item(abc.ABC):
         self.parent = parent
         self.default_icon = default_icon
         self.icons = {}
+
+        # Events
+        event_bus.subscribe(self, EventType.ITEM_RENDERED, self.on_item_rendered)
+        event_bus.subscribe(self, EventType.ITEM_PRESSED, self.on_item_pressed)
+        event_bus.subscribe(self, EventType.ITEM_RELEASED, self.on_item_released)
+        event_bus.subscribe(self, EventType.CLOCK_TICK, self.on_periodic_tick)
 
         # Load icons
         # We load icon from the path, from pngs and svgs
@@ -138,7 +145,7 @@ class Item(abc.ABC):
                 icon_path = Path(self.path).parent / f"{self.name}.{ext}"
             # end if
             icon_path = str(icon_path)
-
+            Logger.inst().debug(f"Item {self.name}, loading icon {icon_path} for state {state}")
             # Load icon
             if os.path.exists(icon_path):
                 return load_image(icon_path)
@@ -197,6 +204,26 @@ class Item(abc.ABC):
 
     # endregion PRIVATE METHODS
 
+    # region OVERRIDE
+
+    # String representation
+    def __str__(self):
+        """
+        String representation of the item.
+        """
+        return f"{self.__class__.__name__}({self.name})"
+    # end __str__
+
+    # String representation
+    def __repr__(self):
+        """
+        String representation of the item.
+        """
+        return f"{self.__class__.__name__}({self.name})"
+    # end __repr__
+
+    # endregion OVERRIDE
+
     # region EVENTS
 
     # On item rendered
@@ -251,10 +278,12 @@ class Button(Item):
         """
         Constructor for the Button class.
 
-        Args:
-            name (str): Name of the button.
-            path (str): Path to the button file.
-            parent (PanelNode): Parent panel.
+        :param name: Name of the button.
+        :type name: str
+        :param path: Path to the button file.
+        :type path: Path
+        :param parent: Parent panel.
+        :type parent: PanelNode
         """
         # Call parent constructor
         super().__init__(
@@ -384,6 +413,16 @@ class Panel(Item):
         self.previous_page_icon = load_package_icon("previous_page.svg")
         self.button_default_icon = load_package_icon("button_default.svg")
 
+        # Events
+        event_bus.subscribe(self, EventType.KEY_RELEASED, self.on_key_released)
+        event_bus.subscribe(self, EventType.KEY_PRESSED, self.on_key_pressed)
+        event_bus.subscribe(self, EventType.PANEL_RENDERED, self.on_panel_rendered)
+        event_bus.subscribe(self, EventType.PANEL_ACTIVATED, self.on_panel_activated)
+        event_bus.subscribe(self, EventType.PANEL_DEACTIVATED, self.on_panel_deactivated)
+        event_bus.subscribe(self, EventType.PANEL_PAGE_CHANGED, self.on_panel_page_changed)
+        event_bus.subscribe(self, EventType.PANEL_NEXT_PAGE, self.on_panel_next_page)
+        event_bus.subscribe(self, EventType.PANEL_PREVIOUS_PAGE, self.on_panel_previous_page)
+
         # If I find a items.toml in the directory
         if (self.path / "items.toml").exists():
             # I load the items listed in the toml file
@@ -481,7 +520,7 @@ class Panel(Item):
         """
         # If there is a next page
         if self.current_page < self.n_pages - 1:
-            self.on_page_changed(self.current_page, self.current_page + 1)
+            event_bus.send_event(self, EventType.PANEL_PAGE_CHANGED, data=(self.current_page, self.current_page + 1))
             self.current_page += 1
         # end if
     # end next_page
@@ -492,7 +531,7 @@ class Panel(Item):
         Moves to the previous page in the panel.
         """
         if self.current_page > 0:
-            self.on_page_changed(self.current_page, self.current_page - 1)
+            event_bus.send_event(self, EventType.PANEL_PAGE_CHANGED, data=(self.current_page, self.current_page - 1))
             self.current_page -= 1
         # end if
     # end previous_page
@@ -563,7 +602,7 @@ class Panel(Item):
             button_instance (Button): Button instance.
         """
         if button_instance.name in self.items:
-            Logger.inst().info(f"[red]Button {button_instance.name} already exists in {self.name}[/]")
+            Logger.inst().error(f"Button {button_instance.name} already exists in {self.name}")
             return
         # end if
         self.items[button_instance.name] = button_instance
@@ -692,7 +731,7 @@ class Panel(Item):
         Renders the current panel on the Stream Deck.
         """
         # Log
-        Logger.inst().info(f"Panel({self.name})::render")
+        Logger.inst().info(f"Rendering panel {self.name}")
 
         # Clear the deck
         self.renderer.clear_deck()
@@ -714,7 +753,7 @@ class Panel(Item):
         for i, item_name in enumerate(self.pages[self.current_page]):
             key_index = i + key_shift
             item = self.items[item_name]
-            item_icon = item.on_item_rendered()
+            item_icon = event_bus.send_event(item, EventType.ITEM_RENDERED)
             if item_icon:
                 self.renderer.render_key(key_index, item_icon, item.name)
             # end if
@@ -724,9 +763,6 @@ class Panel(Item):
         if self.has_next_page():
             self.renderer.render_key(14, self.next_page_icon, "Suivant")
         # end if
-
-        # Render event
-        self.on_item_rendered()
     # end render
 
     # Print structure
@@ -886,17 +922,16 @@ class Panel(Item):
         item_index = key_index
         item_index = item_index - 1 if self.parent or self.has_previous_page() else item_index
 
-        # Debug
-        Logger.inst().event("Panel", self.name, "handle_key_pressed", item=item_index, key_index=key_index)
-
         # Get item
         item = self.items[page_items[item_index]]
 
         # Log
-        Logger.inst().event("Panel", self.name, "handle_key_pressed", item=item_index, item_type=item.__class__.__name__)
+        Logger.inst().debug(
+            f"{self}._handle_key_pressed key_index={key_index} item={item_index}, item_type={item.__class__.__name__}"
+        )
 
-        # Dispatch event
-        item_icon = item.on_item_pressed(key_index)
+        # Send item pressed event to the item
+        item_icon = event_bus.send_event(item, EventType.ITEM_PRESSED, key_index)
 
         # Update icon if needed
         if item_icon:
@@ -915,19 +950,19 @@ class Panel(Item):
         # Check special keys
         if self.has_next_page() and key_index == 14:
             Logger.inst().event("Panel", self.name, "_handle_special_key_released", action="next_page")
-            self.next_page()
-            self.render()
+            event_bus.send_event(self, EventType.PANEL_NEXT_PAGE)
+            event_bus.send_event(self, EventType.PANEL_RENDERED)
             return True
         elif self.has_previous_page() and key_index == 0:
             Logger.inst().event("Panel", self.name, "_handle_special_key_released", action="previous_page")
-            self.previous_page()
-            self.render()
+            event_bus.send_event(self, EventType.PANEL_PREVIOUS_PAGE)
+            event_bus.send_event(self, EventType.PANEL_RENDERED)
             return True
         elif self.has_parent() and key_index == 0:
             Logger.inst().event("Panel", self.name, "_handle_special_key_released", action="parent")
-            self.set_inactive()
-            self.parent.set_active(True)
-            self.parent.render()
+            event_bus.send_event(self, EventType.PANEL_DEACTIVATED)
+            event_bus.send_event(self.parent, EventType.PANEL_ACTIVATED)
+            event_bus.send_event(self.parent, EventType.PANEL_RENDERED)
             return True
         # end if
         return False
@@ -957,16 +992,12 @@ class Panel(Item):
         item = self.items[page_items[item_index]]
 
         # Log
-        Logger.inst().event(
-            "Panel",
-            self.name,
-            "handle_key_released",
-            item=item_index,
-            item_type=item.__class__.__name__
+        Logger.inst().debug(
+            f"{self}._handle_key_released key_index={key_index} item={item_index}, item_type={item.__class__.__name__}"
         )
 
         # Dispatch event
-        item_icon = item.on_item_released(key_index)
+        item_icon = event_bus.send_event(item, EventType.ITEM_RELEASED, key_index)
 
         # Update icon if needed
         if item_icon:
@@ -975,9 +1006,9 @@ class Panel(Item):
 
         # Switch to the active panel
         if type(item) is Panel:
-            self.set_inactive()
-            item.set_active(True)
-            item.render()
+            event_bus.send_event(self, EventType.PANEL_DEACTIVATED)
+            event_bus.send_event(item, EventType.PANEL_ACTIVATED)
+            event_bus.send_event(item, EventType.PANEL_RENDERED)
         # end if
     # end _handle_key_released
 
@@ -1030,11 +1061,21 @@ class Panel(Item):
 
     # region EVENTS
 
+    # On panel rendered
+    def on_panel_rendered(self):
+        """
+        Event handler for the "panel_rendered" event.
+        """
+        Logger.inst().event(self.__class__.__name__, self.name, "on_panel_rendered")
+        self.render()
+    # end on_panel_rendered
+
     # On panel activated
     def on_panel_activated(self):
         """
         Event handler for the "panel_activated" event.
         """
+        self.active = True
         Logger.inst().event(self.__class__.__name__, self.name, "on_panel_activated")
     # end on_panel_activated
 
@@ -1043,11 +1084,12 @@ class Panel(Item):
         """
         Event handler for the "panel_deactivated" event.
         """
+        self.active = False
         Logger.inst().event(self.__class__.__name__, self.name, "on_panel_deactivated")
     # end on_panel_deactivated
 
     # On page changed
-    def on_page_changed(self, old_page, new_page):
+    def on_panel_page_changed(self, old_page, new_page):
         """
         Event handler for the "page_changed" event.
 
@@ -1057,7 +1099,25 @@ class Panel(Item):
         :type new_page: int
         """
         Logger.inst().event(self.__class__.__name__, self.name, "on_page_changed", old_page=old_page, new_page=new_page)
-    # end on_page_changed
+    # end on_panel_page_changed
+
+    # On next page
+    def on_panel_next_page(self):
+        """
+        Event handler for the "next_page" event.
+        """
+        Logger.inst().event(self.__class__.__name__, self.name, "on_next_page")
+        self.next_page()
+    # end on_panel_next_page
+
+    # On previous page
+    def on_panel_previous_page(self):
+        """
+        Event handler for the "previous_page" event.
+        """
+        Logger.inst().event(self.__class__.__name__, self.name, "on_previous_page")
+        self.previous_page()
+    # end on_panel_previous_page
 
     # On item rendered
     def on_item_rendered(self):
@@ -1106,9 +1166,8 @@ class Panel(Item):
         """
         Event handler for the "key_pressed" event.
 
-        Args:
-            deck (StreamDeck): StreamDeck instance.
-            state (bool): State of the key (pressed or released
+        :param key_index: Index of the key that was pressed.
+        :type key_index: int
         """
         # Log
         Logger.inst().event(self.__class__.__name__, self.name, "on_key_pressed", key_index=key_index)

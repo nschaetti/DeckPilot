@@ -30,7 +30,7 @@ import threading
 from StreamDeck.DeviceManager import DeviceManager
 
 from deckpilot.utils import Logger
-
+from deckpilot.comm import event_bus, EventType
 from .deck_renderer import DeckRenderer
 
 
@@ -39,17 +39,10 @@ class DeckManager:
     Manages the Stream Deck device.
     """
 
-    def __init__(
-            self,
-            event_bus
-    ):
+    def __init__(self):
         """
         Constructor for the DeckManager class.
-
-        :param event_bus: Event bus to communicate with other components.
-        :type event_bus: EventBus
         """
-        self._event_bus = event_bus
         self._deck = None
         self._stream_decks = None
         self._serial_number = None
@@ -189,14 +182,18 @@ class DeckManager:
             self.deck.set_brightness(self._brightness)
 
             # Launch initialized event
-            self._event_bus.publish("initialized", (self.deck,))
+            event_bus.publish(EventType.INITIALIZED, (self.deck,))
 
             # Set the key callback
             self.deck.set_key_callback(self._key_change_callback)
 
             # Start the periodic event thread
             if clock_tick_interval > 0:
-                threading.Thread(target=self._send_periodic_event, args=(clock_tick_interval,), daemon=True).start()
+                threading.Thread(
+                    target=self._send_periodic_event,
+                    args=(clock_tick_interval,),
+                    daemon=True
+                ).start()
             # end if
 
             # Start the key event listener
@@ -245,8 +242,9 @@ class DeckManager:
         - interval: int - the interval in seconds
         """
         while True:
+            Logger.inst().debug(f"DeckManager: Sending periodic event")
             # Publish the periodic event
-            self._event_bus.publish("periodic", ())
+            event_bus.publish(EventType.CLOCK_TICK, ())
 
             # Sleep
             time.sleep(interval)
@@ -267,7 +265,7 @@ class DeckManager:
         # Logger().inst().info(f"Deck {deck.id()} Key {key} = {state}")
 
         # Publish the key change event
-        self._event_bus.publish("key_change", (deck, key, state))
+        event_bus.publish(EventType.KEY_CHANGED, (deck, key, state))
     # end _key_change_callback
 
     # Signal handler
@@ -276,7 +274,7 @@ class DeckManager:
         Signal handler for the Stream Deck.
         """
         # Send the exit event
-        self._event_bus.publish("exit", ())
+        event_bus.publish(EventType.EXIT, ())
 
         # Close the StreamDeck
         Logger().inst().info(f"Closing StreamDeck {self._deck.get_serial_number()}...")

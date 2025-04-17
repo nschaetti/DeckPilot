@@ -23,34 +23,50 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 """
 
 # Imports
-from deckpilot.elements import Button
-from deckpilot.utils import Logger
+from functools import wraps
+from .event_bus import EventBus
 
 
-class Button13(Button):
+# Decorator for subscribing to broadcast
+def on_broadcast(event_type: str):
     """
-    Button that says hello
+    Decorator for subscribing to broadcast events.
+
+    :param event_type: Type of event to subscribe to.
+    :type event_type: str
+    :return: Decorator function.
+    :rtype: Callable
     """
-
-    # Constructor
-    def __init__(
-            self,
-            name,
-            path,
-            parent
-    ):
-        """
-        Constructor for the Button class.
-
-        Args:
-            name (str): Name of the button.
-            path (str): Path to the button file.
-            parent (PanelNode): Parent panel.
-        """
-        super().__init__(name, path, parent)
-        Logger.inst().info(f"{self.__class__.__name__} {name} created.")
-    # end __init__
-
-# end Button13
+    def decorator(func):
+        EventBus().subscribe_broadcast(func)
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        # end wrapper
+        return wrapper
+    # end decorator
+    return decorator
+# end decorator
 
 
+
+# Decorator for subscribing to events
+def on_event(event_type: str):
+    """
+    Decorator for subscribing to events.
+
+    :param event_type: Type of event to subscribe to.
+    :type event_type: str
+    :return: Decorator function.
+    :rtype: Callable
+    """
+    def decorator(func):
+        EventBus().subscribe(event_type, func)
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        # end wrapper§
+        return wrapper
+    # end decorator
+    return decorator
+# end decorator

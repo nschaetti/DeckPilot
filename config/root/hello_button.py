@@ -23,17 +23,9 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 """
 
 # Imports
-import os
 from typing import Any
-
 from deckpilot.elements import Button
-from deckpilot.utils import get_logger
-
-from deckpilot.utils import load_image, load_package_icon
-
-
-# Console
-logger = get_logger()
+from deckpilot.utils import Logger
 
 
 class HelloButton(Button):
@@ -51,13 +43,15 @@ class HelloButton(Button):
         """
         Constructor for the Button class.
 
-        Args:
-            name (str): Name of the button.
-            path (str): Path to the button file.
-            parent (PanelNode): Parent panel.
+        :param name: Name of the button.
+        :type name: str
+        :param path: Path to the button file.
+        :type path: Path
+        :param parent: Parent panel.
+        :type parent: PanelNode
         """
         super().__init__(name, path, parent)
-        logger.info(f"HelloButton {name} created.")
+        Logger.inst().info(f"HelloButton {name} created.")
 
         # Blinking state
         self.blinking = 0
@@ -102,7 +96,7 @@ class HelloButton(Button):
         """
         Periodic trick event.
         """
-        logger.info(f"[blue bold]{self.__class__.__name__}[/]({self.name})::on_periodic_tick")
+        Logger.inst().event(self.__class__.__name__, self.name, "on_periodic_tick")
 
         # Toggle blinking
         self.blinking = 1 - self.blinking

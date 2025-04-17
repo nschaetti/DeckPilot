@@ -72,14 +72,11 @@ def start(
     logger.info(f"StreamDeck device index: {streamdeck_device_index}")
     logger.info(f"StreamDeck serial number: {streamdeck_serial_number}")
 
-    # Event bus
-    event_bus = EventBus()
-
     # Create DeckManager
-    deck_manager = DeckManager(event_bus)
+    deck_manager = DeckManager()
 
     # Configuration of the panels
-    registry = PanelRegistry(root, event_bus, deck_manager.renderer)
+    registry = PanelRegistry(root, deck_manager.renderer)
     registry.print_structure()
 
     # Init Deck

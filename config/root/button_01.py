@@ -42,35 +42,16 @@ class Button01(Button):
         """
         Constructor for the Button class.
 
-        Args:
-            name (str): Name of the button.
-            path (str): Path to the button file.
-            parent (PanelNode): Parent panel.
+        :param name: Name of the button.
+        :type name: str
+        :param path: Path to the button file.
+        :type path: Path
+        :param parent: Parent panel.
+        :type parent: PanelNode
         """
         super().__init__(name, path, parent)
         Logger.inst().info(f"{self.__class__.__name__} {name} created.")
     # end __init__
-
-    def on_button_rendered(self):
-        """
-        Render button
-        """
-        Logger.inst().info(f"Button {self.name} rendered", extra={"markup": True})
-    # end on_button_rendered
-
-    def on_button_pressed(self, key_index):
-        """
-        Event handler for the "button_pressed" event.
-        """
-        Logger.inst().info(f"Button {self.name} pressed", extra={"markup": True})
-    # end on_button_pressed
-
-    def on_button_released(self, key_index):
-        """
-        Event handler for the "button_released" event.
-        """
-        Logger.inst().info(f"Button {self.name} released", extra={"markup": True})
-    # end on_button_released
 
 # end Button01
 

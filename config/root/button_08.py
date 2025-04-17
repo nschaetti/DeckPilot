@@ -51,27 +51,6 @@ class Button08(Button):
         Logger.inst().info(f"{self.__class__.__name__} {name} created.")
     # end __init__
 
-    def on_button_rendered(self):
-        """
-        Render button
-        """
-        Logger.inst().info(f"Button {self.name} rendered")
-    # end on_button_rendered
-
-    def on_button_pressed(self, key_index):
-        """
-        Event handler for the "button_pressed" event.
-        """
-        Logger.inst().info(f"Button {self.name} pressed")
-    # end on_button_pressed
-
-    def on_button_released(self, key_index):
-        """
-        Event handler for the "button_released" event.
-        """
-        Logger.inst().info(f"Button {self.name} released")
-    # end on_button_released
-
 # end Button08
 
 

@@ -27,6 +27,7 @@ from pathlib import Path
 import logging
 from deckpilot.elements import Panel
 from deckpilot.utils import Logger
+from deckpilot.comm import event_bus, EventType
 
 
 # PanelRegistry
@@ -39,7 +40,6 @@ class PanelRegistry:
     def __init__(
             self,
             base_path: Path,
-            event_bus,
             deck_renderer
     ):
         """
@@ -47,14 +47,12 @@ class PanelRegistry:
 
         :param base_path: Path to the directory where the buttons and sub-panels are stored.
         :type base_path: Path
-        :param event_bus: Event bus for the application.
-        :type event_bus: EventBus
         :param deck_renderer: Deck renderer instance.
         :type deck_renderer: DeckRenderer
         """
         # Properties
         self._event_bus = event_bus
-        self.base_path = base_path
+        self._base_path = base_path
         self._deck_renderer = deck_renderer
 
         # Load the root panel
@@ -67,10 +65,10 @@ class PanelRegistry:
         )
 
         # Subscribe to events
-        self._event_bus.subscribe("key_change", self._on_key_change)
-        self._event_bus.subscribe("initialized", self._on_initialize)
-        self._event_bus.subscribe("periodic", self._on_periodic_tick)
-        self._event_bus.subscribe("exit", self._on_exit)
+        event_bus.subscribe(self, EventType.KEY_CHANGED, self._on_key_change)
+        event_bus.subscribe(self, EventType.INITIALIZED, self._on_initialize)
+        event_bus.subscribe(self, EventType.CLOCK_TICK, self._on_periodic_tick)
+        event_bus.subscribe(self, EventType.EXIT, self._on_exit)
     # end __init__
 
     # region PUBLIC METHODS
@@ -186,9 +184,9 @@ class PanelRegistry:
 
         # Key pressed event
         if state:
-            active_panel.on_key_pressed(key_index)
+            event_bus.send_event(active_panel, EventType.KEY_PRESSED, key_index)
         else:
-            active_panel.on_key_released(key_index)
+            event_bus.send_event(active_panel, EventType.KEY_RELEASED, key_index)
         # end if
     # end _on_key_change
 
