@@ -23,8 +23,10 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 """
 
 # Imports
+from typing import Optional
 from deckpilot.elements import Button
 from deckpilot.utils import Logger
+from deckpilot.core import KeyDisplay
 
 
 class Button01(Button):
@@ -37,7 +39,7 @@ class Button01(Button):
             self,
             name,
             path,
-            parent
+            parent,
     ):
         """
         Constructor for the Button class.
@@ -52,6 +54,25 @@ class Button01(Button):
         super().__init__(name, path, parent)
         Logger.inst().info(f"{self.__class__.__name__} {name} created.")
     # end __init__
+
+    # region EVENTS
+
+    # On item released
+    def on_item_released(self, key_index) -> Optional[KeyDisplay]:
+        """
+        Event handler for when the item is released.
+
+        :param key_index: Index of the key that was released.
+        :type key_index: int
+        :return: KeyDisplay object or None.
+        :rtype: Optional[KeyDisplay]
+        """
+        Logger.inst().info(f"{self.__class__.__name__} {self.name} released.")
+        self.parent.dispatch(source=self, data={'message': "Hello World!"})
+        return super().on_item_released(key_index)
+    # end on_item_released
+
+    # endregion EVENTS
 
 # end Button01
 

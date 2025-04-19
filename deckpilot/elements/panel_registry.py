@@ -24,10 +24,9 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 
 # Imports
 from pathlib import Path
-import logging
 from deckpilot.elements import Panel
 from deckpilot.utils import Logger
-from deckpilot.comm import event_bus, EventType
+from deckpilot.comm import event_bus, EventType, context
 
 
 # PanelRegistry
@@ -51,7 +50,6 @@ class PanelRegistry:
         :type deck_renderer: DeckRenderer
         """
         # Properties
-        self._event_bus = event_bus
         self._base_path = base_path
         self._deck_renderer = deck_renderer
 
@@ -63,6 +61,9 @@ class PanelRegistry:
             renderer=deck_renderer,
             active=True
         )
+
+        # Register root as the active panel
+        context.set_active_panel(self.root)
 
         # Subscribe to events
         event_bus.subscribe(self, EventType.KEY_CHANGED, self._on_key_change)
@@ -88,7 +89,7 @@ class PanelRegistry:
             if panel_name in current_node.sub_panels:
                 current_node = current_node.sub_panels[panel_name]
             else:
-                Logger.inst().warn(f"WARNING: Panel '{panel_name}' not found in hierarchy.", extra={"markup": True})
+                Logger.inst().warn(f"WARNING: Panel '{panel_name}' not found in hierarchy.")
                 return None
             # end if
         # end for
@@ -100,11 +101,8 @@ class PanelRegistry:
         """
         Renders the current panel on the Stream Deck.
         """
-        # Get active panel
-        active_panel = self._get_active_panel()
-
         # Render active panel
-        active_panel.render()
+        context.active_panel.render()
     # end render
 
     def print_structure(self):
@@ -115,18 +113,6 @@ class PanelRegistry:
     # end print_structure
 
     # endregion PUBLIC METHODS
-
-    # region PRIVATE METHODS
-
-    # Get active panel
-    def _get_active_panel(self):
-        """
-        Retrieves the active panel.
-        """
-        return self.root.get_active_panel()
-    # end _get_active_panel
-
-    # endregion PRIVATE METHODS
 
     # region EVENTS
 
@@ -143,18 +129,17 @@ class PanelRegistry:
     # end _on_initialize
 
     # On periodic tick
-    def _on_periodic_tick(self):
+    def _on_periodic_tick(self, time_i: int, time_count: int):
         """
         Event handler for the "periodic" event.
         This method is called periodically according to the configuration.
+
+        :param time_i: The current time index.
+        :type time_i: int
+        :param time_count: The total time count.
+        :type time_count: int
         """
         Logger.inst().event(self.__class__.__name__, "main", "on_periodic_tick")
-
-        # Active panel
-        active_panel = self._get_active_panel()
-
-        # Periodic tick
-        active_panel.on_periodic_tick()
     # end _on_periodic_tick
 
     # On exit
@@ -179,14 +164,11 @@ class PanelRegistry:
         """
         Logger.inst().event(self.__class__.__name__, "main", "_on_key_change", key_index=key_index, state=state)
 
-        # Active panel
-        active_panel = self._get_active_panel()
-
         # Key pressed event
         if state:
-            event_bus.send_event(active_panel, EventType.KEY_PRESSED, key_index)
+            event_bus.send_event(context.active_panel, EventType.KEY_PRESSED, key_index)
         else:
-            event_bus.send_event(active_panel, EventType.KEY_RELEASED, key_index)
+            event_bus.send_event(context.active_panel, EventType.KEY_RELEASED, key_index)
         # end if
     # end _on_key_change
 

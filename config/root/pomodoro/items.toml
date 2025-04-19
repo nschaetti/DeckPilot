@@ -1,0 +1,117 @@
+# Root
+
+#
+# Start buttons
+#
+
+[[items]]
+name = "start_15m"
+path = "start_button.py"
+type = "button"
+
+[items.params]
+duration = 900
+font_family = "Roboto-Bold"
+font_size = 270
+font_color = "red"
+
+[[items]]
+name = "start_30m"
+path = "start_button.py"
+type = "button"
+
+[items.params]
+duration = 1800
+font_family = "Roboto-Bold"
+font_size = 270
+font_color = "orange"
+
+[[items]]
+name = "start_5m"
+path = "start_button.py"
+type = "button"
+
+[items.params]
+duration = 300
+font_family = "Roboto-Bold"
+font_size = 270
+font_color = "green"
+
+[[items]]
+name = "start_40m"
+path = "start_button.py"
+type = "button"
+
+[items.params]
+duration = 2400
+font_family = "Roboto-Bold"
+font_size = 270
+font_color = "blue"
+
+#
+# Countdown display
+#
+
+[[items]]
+name = "countdown_hour"
+path = "count_down.py"
+type = "button"
+
+[items.params]
+mode = "hours"
+font_family = "Roboto-Bold"
+font_size = 260
+
+[[items]]
+name = "countdown_minute"
+path = "count_down.py"
+type = "button"
+
+[items.params]
+mode = "minutes"
+font_family = "Roboto-Bold"
+font_size = 260
+
+[[items]]
+name = "countdown_second"
+path = "count_down.py"
+type = "button"
+
+[items.params]
+mode = "seconds"
+font_family = "Roboto-Bold"
+font_size = 260
+
+#
+# Clock display
+#
+
+[[items]]
+name = "clock_hours"
+path = "time_clock.py"
+type = "button"
+
+[items.params]
+mode = "hours"
+font_family = "Roboto-Bold"
+font_size = 260
+
+[[items]]
+name = "clock_minutes"
+path = "time_clock.py"
+type = "button"
+
+[items.params]
+mode = "minutes"
+font_family = "Roboto-Bold"
+font_size = 260
+
+[[items]]
+name = "clock_seconds"
+path = "time_clock.py"
+type = "button"
+
+[items.params]
+mode = "seconds"
+font_family = "Roboto-Bold"
+font_size = 260

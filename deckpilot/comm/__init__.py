@@ -25,6 +25,8 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 # Imports
 from .event_bus import EventBus, event_bus, EventType
 from .decorator import on_broadcast, on_event
+from .context import Context, context
+
 
 __all__ = [
     # Event Bus
@@ -34,5 +36,8 @@ __all__ = [
     # Decorators
     "on_broadcast",
     "on_event",
+    # Context
+    "Context",
+    "context"
 ]
 

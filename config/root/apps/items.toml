@@ -1,0 +1,29 @@
+# Root
+
+[[items]]
+name = "firefox"
+path = "launch_app.py"
+type = "button"
+
+[items.params]
+label = "Firefox"
+command = "firefox"
+icon = "firefox"
+icon_pressed = "firefox_pressed"
+
+[[items]]
+name = "calculator"
+path = "launch_app.py"
+type = "button"
+
+[items.params]
+label = "Calculator"
+command = "gnome-calculator"
+icon = "calculator"
+icon_pressed = "calculator_pressed"
+
+
+
+
+
+

@@ -30,7 +30,7 @@ import threading
 from StreamDeck.DeviceManager import DeviceManager
 
 from deckpilot.utils import Logger
-from deckpilot.comm import event_bus, EventType
+from deckpilot.comm import event_bus, EventType, context
 from .deck_renderer import DeckRenderer
 
 
@@ -149,13 +149,16 @@ class DeckManager:
     # Main
     def main(
             self,
-            clock_tick_interval=2
+            clock_tick_interval=2,
+            hidden_clock_tick_interval=1,
     ):
         """
         Main method for the DeckManager class.
 
-        Args:
-        - brightness (int): Brightness level for the Stream Deck.
+        :param clock_tick_interval: Interval for the periodic event in seconds.
+        :type clock_tick_interval: int
+        :param hidden_clock_tick_interval: Interval for the hidden tick event in seconds.
+        :type hidden_clock_tick_interval: int
         """
         # Open the specific StreamDeck
         if self.deck.is_visual():
@@ -192,6 +195,15 @@ class DeckManager:
                 threading.Thread(
                     target=self._send_periodic_event,
                     args=(clock_tick_interval,),
+                    daemon=True
+                ).start()
+            # end if
+
+            # Start the hidden tick event thread
+            if hidden_clock_tick_interval > 0:
+                threading.Thread(
+                    target=self._send_hidden_periodic_event,
+                    args=(hidden_clock_tick_interval,),
                     daemon=True
                 ).start()
             # end if
@@ -241,15 +253,45 @@ class DeckManager:
         Args:
         - interval: int - the interval in seconds
         """
+        time_i = 0
+        time_count = 0
         while True:
             Logger.inst().debug(f"DeckManager: Sending periodic event")
+
             # Publish the periodic event
-            event_bus.publish(EventType.CLOCK_TICK, ())
+            event_bus.send_event(context.active_panel, EventType.CLOCK_TICK, data=(time_i, time_count))
 
             # Sleep
             time.sleep(interval)
+
+            time_i += 1
+            time_count += interval
         # end while
     # end _send_periodic_event
+
+    # Callback for periodic event
+    def _send_hidden_periodic_event(self, interval: int):
+        """
+        Callback for periodic event
+
+        :param interval: int - the interval in seconds
+        :type interval: int
+        """
+        time_i = 0
+        time_count = 0
+        while True:
+            Logger.inst().debug(f"DeckManager: Sending hidden periodic event")
+
+            # Publish the periodic event
+            event_bus.publish(EventType.INTERNAL_CLOCK_TICK, data=(time_i, time_count))
+
+            # Sleep
+            time.sleep(interval)
+
+            time_i += 1
+            time_count += interval
+        # end while
+    # end _send_hidden_periodic_event
 
     # Callback for state change of a key
     def _key_change_callback(self, deck, key, state):

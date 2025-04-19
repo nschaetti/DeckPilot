@@ -24,7 +24,7 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 
 # Imports
 from .logger import setup_logger, Logger, LogLevel
-from .utils import load_image, load_package_icon, load_package_font
+from .utils import load_image, load_package_icon, load_package_font, load_font
 
 # ALL
 __all__ = [
@@ -36,4 +36,5 @@ __all__ = [
     "load_image",
     "load_package_icon",
     "load_package_font",
+    "load_font",
 ]

@@ -24,14 +24,16 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 
 # Imports
 from typing import Any, Optional
+import subprocess
+
 from deckpilot.elements import Button
 from deckpilot.utils import Logger
 from deckpilot.core import KeyDisplay
 
 
-class HelloButton(Button):
+class LaunchAppButton(Button):
     """
-    Button that says hello
+    Button that launches an application.
     """
 
     # Constructor
@@ -40,7 +42,10 @@ class HelloButton(Button):
             name,
             path,
             parent,
-            label: str
+            label: str,
+            command: str,
+            icon: str,
+            icon_pressed: str,
     ):
         """
         Constructor for the Button class.
@@ -53,16 +58,25 @@ class HelloButton(Button):
         :type parent: PanelNode
         :param label: Label for the button.
         :type label: str
+        :param command: Command to execute.
+        :type command: str
+        :param icon: Icon for the button.
+        :type icon: str
+        :param icon_pressed: Icon for the button when pressed.
+        :type icon_pressed: str
         """
         super().__init__(name, path, parent)
-        Logger.inst().info(f"HelloButton {name} created.")
+        Logger.inst().info(f"AppLaunchButton {name} created.")
 
         # Set label
         self.label = label
 
-        # Blinking state
-        self.blinking = 0
-        self.blinking_icon = self.am.get_icon("default_blinking")
+        # Set command
+        self.command = command
+
+        # App icons
+        self.icon_active = self.am.get_icon(icon_pressed)
+        self.icon_inactive = self.am.get_icon(icon)
     # end __init__
 
     # region EVENTS
@@ -71,21 +85,11 @@ class HelloButton(Button):
         """
         Render button
         """
-        # Super
-        icon = super().on_item_rendered().icon
-
         # Return icon
-        if self.blinking == 1:
-            return KeyDisplay(
-                text=self.label,
-                icon=self.blinking_icon,
-                text_color='red'
-            )
-        else:
-            return KeyDisplay(
-                text=self.label,
-                icon=icon,
-            )
+        return KeyDisplay(
+            text=self.label,
+            icon=self.icon_inactive
+        )
         # end if
     # end on_item_rendered
 
@@ -95,13 +99,11 @@ class HelloButton(Button):
         """
         # Super
         icon = super().on_item_pressed(key_index).icon
-        text = super().on_item_pressed(key_index).text
 
         # Return icon
         return KeyDisplay(
             text=self.label,
-            icon=icon,
-            text_color="blue"
+            icon=icon
         )
     # end on_item_pressed
 
@@ -113,19 +115,19 @@ class HelloButton(Button):
         # Super
         icon = super().on_item_released(key_index).icon
 
+        # Exécution de la commande
+        try:
+            subprocess.Popen(self.command, shell=True)
+            Logger.inst().info(f"Launched command: {self.command}")
+        except Exception as e:
+            Logger.inst().error(f"Failed to launch command: {self.command} → {e}")
+        # end try
+
         # Return icon
-        if self.blinking == 1:
-            return KeyDisplay(
-                text=self.label,
-                icon=self.blinking_icon,
-                text_color='red'
-            )
-        else:
-            return KeyDisplay(
-                text=self.label,
-                icon=icon,
-            )
-        # end if
+        return KeyDisplay(
+            text=self.label,
+            icon=icon
+        )
     # end on_item_released
 
     # On periodic event
@@ -139,34 +141,10 @@ class HelloButton(Button):
         :type time_count: int
         """
         Logger.inst().event(self.__class__.__name__, self.name, "on_periodic_tick")
-
-        # Toggle blinking
-        self.blinking = 1 - self.blinking
-
-        # Logger
-        Logger.inst().debug(f"HelloButton {self.name} blinking = {self.blinking}, pressed = {self.pressed}")
-
-        # Update icon
-        if not self.pressed:
-            if self.blinking == 1:
-                return KeyDisplay(
-                    text=self.label,
-                    icon=self.blinking_icon,
-                    text_color='red'
-                )
-            else:
-                return KeyDisplay(
-                    text=self.label,
-                    icon=self.icon_inactive,
-                )
-            # end if
-        # end if
-
         return None
     # end on_periodic_trick
 
     # endregion EVENTS
 
-# end HelloButton
-
+# end AppLaunchButton
 

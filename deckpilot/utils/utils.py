@@ -24,7 +24,6 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 
 # Imports
 import os
-import logging
 import cairosvg
 import importlib.resources
 from rich.console import Console
@@ -32,9 +31,7 @@ from PIL import Image
 from PIL import ImageFont
 from io import BytesIO
 
-
-# Logger
-logger = logging.getLogger(__name__)
+from deckpilot.utils import Logger
 
 
 # Load image
@@ -66,7 +63,7 @@ def load_image(image_path):
     try:
         return Image.open(image_filename)
     except ImportError:
-        logging.error("ERROR: PIL is required to load images.")
+        Logger.inst().error("ERROR: PIL is required to load images.")
         return None
     # end try
 # end load_images
@@ -99,16 +96,16 @@ def load_package_icon(icon_name):
                 raise ValueError(f"Unsupported file type: {file_ext}")
             # end if
     except ImportError:
-        logging.log("[red]ERROR: PIL and CairoSVG are required to load images.[/red]")
+        Logger.inst().error("PIL and CairoSVG are required to load images.")
         return None
     except Exception as e:
-        logging.log(f"[red]ERROR: Failed to load {icon_name}: {e}[/red]")
+        Logger.inst().error(f"Failed to load {icon_name}: {e}")
         return None
     # end try
 # end load_package_icon
 
 
-def load_package_font(font_name, size):
+def load_package_font(font_name, size=14):
     """
     Load a font from the package DeckPilot/assets/.
 
@@ -123,7 +120,32 @@ def load_package_font(font_name, size):
         with importlib.resources.open_binary("deckpilot.assets", font_name) as file:
             return ImageFont.truetype(file, size)
     except Exception as e:
-        logger.error(f"Erreur: Impossible de charger la police {font_name}. {e}")
+        Logger.inst().error(f"Erreur: Impossible de charger la police {font_name}. {e}")
         return ImageFont.load_default()
     # end try
 # end load_package_font
+
+
+def load_font(font_path, size):
+    """
+    Load a font from the specified path.
+
+    Args:
+        font_path (str): Path to the font file.
+        size (int): Size of the font.
+
+    Returns:
+        PIL.ImageFont: Loaded font.
+    """
+    try:
+        # Open file
+        with open(font_path, "rb") as file:
+            # Load font
+            font = ImageFont.truetype(file, size)
+            return font
+        # end with
+    except Exception as e:
+        Logger.inst().fatal(f"Cannot load font {font_path}. {e}")
+        raise
+    # end try
+# end load_font

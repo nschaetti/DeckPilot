@@ -7,4 +7,10 @@ brightness = 30
 device_index = 0  # You can also use serial_number = "1234567890"
 
 [general]
-clock_tick_interval = 2
+clock_tick_interval = 1
+hidden_clock_tick_interval = 0
+
+# Asset configuration
+[assets]
+icons_directory = "config/icons"
+fonts_directory = "config/fonts"
