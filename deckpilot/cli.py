@@ -90,7 +90,8 @@ def setup_asset_manager(
     """
     asset_manager = AssetManager(
         icons_directory=config['assets'].get('icons_directory', None),
-        fonts_directory=config['assets'].get('fonts_directory', None)
+        fonts_directory=config['assets'].get('fonts_directory', None),
+        sounds_directory=config['assets'].get('sounds_directory', None),
     )
     context.register("asset_manager", asset_manager)
     return asset_manager
@@ -125,7 +126,6 @@ def start(
 
     # Configuration of the panels
     registry = PanelRegistry(root, deck_manager.renderer)
-    # registry.print_structure()
     context.register("registry", registry)
 
     # Init Deck

@@ -209,10 +209,10 @@ class EventBus:
                 for uscall in self._subscribers[event_type]:
                     if uscall.user == user:
                         if data is None:
-                            Logger.inst().debug(f"EventBus: {event_type} sent to {user}")
+                            Logger.inst().debugg(f"EventBus: {event_type} sent to {user}")
                             return uscall.callback()
                         else:
-                            Logger.inst().debug(f"EventBus: {event_type} sent to {user} with data {data}")
+                            Logger.inst().debugg(f"EventBus: {event_type} sent to {user} with data {data}")
                             if isinstance(data, tuple):
                                 return uscall.callback(*data)
                             else:

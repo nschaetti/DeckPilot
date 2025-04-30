@@ -53,13 +53,18 @@ class PanelRegistry:
         self._base_path = base_path
         self._deck_renderer = deck_renderer
 
+        # Root panel configuration
+        root_params = context.config.get("root", {})
+        Logger.inst().debug(f"PanelRegistry: root_params: {root_params}")
+
         # Load the root panel
         self.root = Panel(
             name="root",
             path=base_path,
             parent=None,
             renderer=deck_renderer,
-            active=True
+            active=True,
+            **root_params
         )
 
         # Register root as the active panel

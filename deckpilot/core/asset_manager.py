@@ -26,6 +26,9 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 import os
 from importlib.resources import files
 from PIL import Image, ImageFont
+import threading
+from playsound import playsound
+
 from deckpilot.utils import Logger, load_image, load_package_icon, load_package_font, load_font
 
 
@@ -39,7 +42,8 @@ class AssetManager:
     def __init__(
             self,
             icons_directory: str = None,
-            fonts_directory: str = None
+            fonts_directory: str = None,
+            sounds_directory: str = None,
     ):
         """
         Constructor for the AssetManager class.
@@ -48,12 +52,16 @@ class AssetManager:
         :type icons_directory: str
         :param fonts_directory: The directory where fonts are stored.
         :type fonts_directory: str
+        :param sounds_directory: The directory where sounds are stored.
+        :type sounds_directory: str
         """
         # Initialize the dictionaries to hold icons and fonts
         self.icons_directory = icons_directory
         self.fonts_directory = fonts_directory
+        self.sounds_directory = sounds_directory
         self.icons = {}
         self.fonts = {}
+        self.sounds = {}
 
         # Load icon assets
         self.load_package_icons()
@@ -62,9 +70,45 @@ class AssetManager:
         # Load font assets
         self.load_package_fonts()
         self.load_fonts(path=self.fonts_directory)
+
+        # Load sound assets
+        self.load_package_sounds()
+        self.load_sounds(path=self.sounds_directory)
     # end __init__
 
     # region PUBLIC
+
+    # Play a sound
+    def play_sound(self, sound_name: str):
+        """
+        Play a sound by its name (non-blocking).
+
+        :param sound_name: The name of the sound.
+        :type sound_name: str
+        """
+        # Get the sound
+        sound = self.sounds.get(sound_name)
+        if sound:
+            sound_path = sound[0]
+            Logger.inst().debug(f"Playing sound: {sound_path}")
+            if sound_path:
+                threading.Thread(target=playsound, args=(sound_path,), daemon=True).start()
+            # end if
+        # end if
+    # end play_sound
+
+    # Get sound
+    def get_sound(self, sound_name: str) -> str:
+        """
+        Get a sound by its name.
+
+        :param sound_name: The name of the sound.
+        :type sound_name: str
+        :return: The path to the sound file.
+        :rtype: str
+        """
+        return self.sounds.get(sound_name)[0]
+    # end get_sound
 
     # Get icon
     def get_icon(self, icon_name: str) -> Image:
@@ -124,6 +168,51 @@ class AssetManager:
             self.fonts[font_name] = (font_path, "config")
         # end for
     # end load_fonts
+
+    # Load sounds
+    def load_sounds(self, path: str):
+        """
+        Load sounds from the sound directory.
+
+        :param path: The path to the sound directory.
+        :type path: str
+        """
+        sound_files = [entry for entry in os.listdir(path) if entry.endswith(('.wav', '.mp3'))]
+
+        # Loop through each file in the directory
+        for file in sound_files:
+            # Log
+            Logger.inst().info(f"Loading sound: {file}")
+
+            # Name and path
+            sound_name = file.split(".")[0]
+            sound_path = os.path.join(path, file)
+
+            # Load the sound
+            self.sounds[sound_name] = (sound_path, "config")
+        # end for
+    # end load_sounds
+
+    # Load package sounds
+    def load_package_sounds(self):
+        """
+        Load package sounds.
+        """
+        sounds_pkg = files("deckpilot.sounds")
+        package_files = [entry for entry in sounds_pkg.iterdir() if entry.is_file()]
+
+        # Loop through each file in the package
+        for entry in package_files:
+            # Info
+            Logger.inst().info(f"Loading package sound: {entry.name}")
+
+            # Name and extension of the file
+            sound_name = entry.stem
+
+            # Load the sound
+            self.sounds[sound_name] = (str(entry), "package")
+        # end for
+    # end load_package_sounds
 
     # Load package fonts
     def load_package_fonts(self):

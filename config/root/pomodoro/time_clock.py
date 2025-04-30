@@ -72,11 +72,11 @@ class ClockButton(Button):
         """
         now = datetime.now()
         if self.mode == "hours":
-            return now.strftime("%H") + "h"
+            return now.strftime("%H")
         elif self.mode == "minutes":
-            return now.strftime("%M") + "m"
+            return now.strftime("%M")
         elif self.mode == "seconds":
-            return now.strftime("%S") + "s"
+            return now.strftime("%S")
         else:
             return "--"
         # end if
@@ -116,10 +116,15 @@ class ClockButton(Button):
 
         :return: The rendered button display.
         """
-        return KeyDisplay(
+        key_display = KeyDisplay(
             text="",
             icon=self.render_icon()
         )
+        key_display.margin_top = 0
+        key_display.margin_right = 0
+        key_display.margin_bottom = 0
+        key_display.margin_left = 0
+        return key_display
     # end on_item_rendered
 
     def on_item_pressed(self, key_index) -> Optional[KeyDisplay]:

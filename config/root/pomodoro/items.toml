@@ -1,9 +1,8 @@
 # Root
 
 #
-# Start buttons
+# 15 minutes countdown
 #
-
 [[items]]
 name = "start_15m"
 path = "start_button.py"
@@ -11,10 +10,24 @@ type = "button"
 
 [items.params]
 duration = 900
+action = "start"
 font_family = "Roboto-Bold"
-font_size = 270
-font_color = "red"
+font_size = 120
+font_color = "white"
+icon_inactive = "countdown"
+icon_pressed = "countdown_pressed"
+icon_current = "countdown_current"
+icon_next = "countdown_next"
+icon_current_next = "countdown_current_next"
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+icon_y_offset = -5
 
+#
+# 30 minutes countdown
+#
 [[items]]
 name = "start_30m"
 path = "start_button.py"
@@ -22,21 +35,49 @@ type = "button"
 
 [items.params]
 duration = 1800
+action = "start"
 font_family = "Roboto-Bold"
-font_size = 270
-font_color = "orange"
+font_size = 120
+font_color = "white"
+icon_inactive = "countdown"
+icon_pressed = "countdown_pressed"
+icon_current = "countdown_current"
+icon_next = "countdown_next"
+icon_current_next = "countdown_current_next"
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+icon_y_offset = -5
 
+#
+# 5 minutes countdown
+#
 [[items]]
 name = "start_5m"
 path = "start_button.py"
 type = "button"
 
 [items.params]
-duration = 300
+duration = 10
+action = "start"
 font_family = "Roboto-Bold"
-font_size = 270
-font_color = "green"
+font_size = 120
+font_color = "white"
+icon_inactive = "countdown"
+icon_pressed = "countdown_pressed"
+icon_current = "countdown_current"
+icon_next = "countdown_next"
+icon_current_next = "countdown_current_next"
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+icon_y_offset = -5
 
+#
+# 40 minutes countdown
+#
 [[items]]
 name = "start_40m"
 path = "start_button.py"
@@ -44,14 +85,49 @@ type = "button"
 
 [items.params]
 duration = 2400
+action = "start"
+font_family = "Roboto-Bold"
+font_size = 120
+font_color = "white"
+icon_inactive = "countdown"
+icon_pressed = "countdown_pressed"
+icon_current = "countdown_current"
+icon_next = "countdown_next"
+icon_current_next = "countdown_current_next"
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+icon_y_offset = -5
+
+#
+# Pause button
+#
+[[items]]
+name = "pause"
+path = "start_button.py"
+type = "button"
+
+[items.params]
+action = "pause"
 font_family = "Roboto-Bold"
 font_size = 270
-font_color = "blue"
+font_color = "white"
+icon_inactive = "countdown_pause"
+icon_pressed = "countdown_pause_pressed"
+icon_current = ""
+icon_next = ""
+icon_current_next = ""
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
 
+#
 #
 # Countdown display
 #
-
+#
 [[items]]
 name = "countdown_hour"
 path = "count_down.py"
@@ -59,8 +135,10 @@ type = "button"
 
 [items.params]
 mode = "hours"
-font_family = "Roboto-Bold"
-font_size = 260
+font_family = "Pixel LCD-7"
+font_size = 200
+icon_y_offset = 0
+alarm_mode_time = 11
 
 [[items]]
 name = "countdown_minute"
@@ -69,8 +147,10 @@ type = "button"
 
 [items.params]
 mode = "minutes"
-font_family = "Roboto-Bold"
-font_size = 260
+font_family = "Pixel LCD-7"
+font_size = 200
+icon_y_offset = 0
+alarm_mode_time = 11
 
 [[items]]
 name = "countdown_second"
@@ -79,13 +159,62 @@ type = "button"
 
 [items.params]
 mode = "seconds"
+font_family = "Pixel LCD-7"
+font_size = 200
+icon_y_offset = 0
+alarm_mode_time = 11
+
+#
+# Stop button
+#
+[[items]]
+name = "stop"
+path = "start_button.py"
+type = "button"
+
+[items.params]
+action = "stop"
 font_family = "Roboto-Bold"
-font_size = 260
+font_size = 270
+font_color = "white"
+icon_inactive = "countdown_stop"
+icon_pressed = "countdown_stop_pressed"
+icon_current = ""
+icon_next = ""
+icon_current_next = ""
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+
+#
+# 1 hour countdown
+#
+[[items]]
+name = "start_1h"
+path = "start_button.py"
+type = "button"
+
+[items.params]
+duration = 3600
+action = "start"
+font_family = "Roboto-Bold"
+font_size = 120
+font_color = "white"
+icon_inactive = "countdown"
+icon_pressed = "countdown_pressed"
+icon_current = "countdown_current"
+icon_next = "countdown_next"
+icon_current_next = "countdown_current_next"
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+icon_y_offset = -5
 
 #
 # Clock display
 #
-
 [[items]]
 name = "clock_hours"
 path = "time_clock.py"
@@ -93,8 +222,8 @@ type = "button"
 
 [items.params]
 mode = "hours"
-font_family = "Roboto-Bold"
-font_size = 260
+font_family = "Pixel LCD-7"
+font_size = 200
 
 [[items]]
 name = "clock_minutes"
@@ -103,8 +232,8 @@ type = "button"
 
 [items.params]
 mode = "minutes"
-font_family = "Roboto-Bold"
-font_size = 260
+font_family = "Pixel LCD-7"
+font_size = 200
 
 [[items]]
 name = "clock_seconds"
@@ -113,5 +242,30 @@ type = "button"
 
 [items.params]
 mode = "seconds"
+font_family = "Pixel LCD-7"
+font_size = 200
+
+#
+# 2 hours countdown
+#
+[[items]]
+name = "start_2h"
+path = "start_button.py"
+type = "button"
+
+[items.params]
+duration = 7200
+action = "start"
 font_family = "Roboto-Bold"
-font_size = 260
+font_size = 120
+font_color = "white"
+icon_inactive = "countdown"
+icon_pressed = "countdown_pressed"
+icon_current = "countdown_current"
+icon_next = "countdown_next"
+icon_current_next = "countdown_current_next"
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+icon_y_offset = -5

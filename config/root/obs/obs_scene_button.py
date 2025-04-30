@@ -23,16 +23,18 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 """
 
 # Imports
-from typing import Optional
-from PIL import Image, ImageDraw, ImageFont
+from typing import Any, Optional
+import obsws_python as obs
+import obsws_python.error as obs_error
+import websocket._exceptions as ws_exceptions
 from deckpilot.elements import Button, Item
 from deckpilot.utils import Logger
 from deckpilot.core import KeyDisplay
 
 
-class StartButton(Button):
+class OBSSceneButton(Button):
     """
-    Button that starts a timer.
+    Button that switches to a specific OBS scene.
     """
 
     # Constructor
@@ -41,16 +43,14 @@ class StartButton(Button):
             name,
             path,
             parent,
-            icon_current: str,
-            icon_next: str,
-            icon_current_next: str,
-            duration: int = 0,
-            action: str = "start",
+            scene_name: str,
+            icon_scene_inactive: str,
+            icon_scene_active: str,
+            icon_scene_error: str = "default_inactive",
+            icon_pressed: str = "default_pressed",
             font_family: str = "Roboto-Bold",
             font_size: int = 180,
             font_color: str = "white",
-            icon_inactive: str = "default",
-            icon_pressed: str = "default_pressed",
             margin_top: Optional[int] = None,
             margin_right: Optional[int] = None,
             margin_bottom: Optional[int] = None,
@@ -67,24 +67,18 @@ class StartButton(Button):
         :type path: Path
         :param parent: Parent panel.
         :type parent: PanelNode
-        :param duration: Duration of the timer in seconds.
-        :type duration: int
-        :param icon_current: Icon for the current state.
-        :type icon_current: str
-        :param icon_next: Icon for the next state.
-        :type icon_next: str
-        :param icon_current_next: Icon for the current and next state.
-        :type icon_current_next: str
+        :param scene_name: Name of the OBS scene to switch to.
+        :type scene_name: str
+        :param icon_scene_inactive: Icon for the inactive state.
+        :type icon_scene_inactive: str
+        :param icon_scene_active: Icon for the active state.
+        :type icon_scene_active: str
         :param font_family: Font family for the countdown display.
         :type font_family: str
         :param font_size: Font size for the countdown display.
         :type font_size: int
         :param font_color: Font color for the countdown display.
         :type font_color: str
-        :param icon_inactive: Icon for the inactive state.
-        :param icon_pressed: Icon for the pressed state.
-        :param action: Action to perform when the button is pressed.
-        :type action: str
         :param margin_top: Top margin for the icon.
         :type margin_top: Optional[int]
         :param margin_right: Right margin for the icon.
@@ -100,155 +94,90 @@ class StartButton(Button):
         """
         super().__init__(name, path, parent)
         Logger.inst().info(f"{self.__class__.__name__} {name} created.")
-        self.duration = duration
         self.font = self.am.get_font(font_family, font_size)
         self.font_color = font_color
-        self.action = action
 
-        # Countdown state
-        self._countdown_state = "inactive"
+        # Assert that parent is a OBSPanel object
+        #if not parent.__class__.__name__ == "OBSPanel":
+        #    raise TypeError(f"Parent must be an OBSPanel object, got {type(parent)}")
+        # end if
+        self.parent = parent
 
         # Icons
-        self.icon_current = self.am.get_icon(icon_current)
-        self.icon_next = self.am.get_icon(icon_next)
-        self.icon_current_next = self.am.get_icon(icon_current_next)
-        self.icon_background = self.am.get_icon(icon_inactive)
+        self.icon_scene_inactive = self.am.get_icon(icon_scene_inactive)
         self.icon_pressed = self.am.get_icon(icon_pressed)
+        self.icon_scene_active = self.am.get_icon(icon_scene_active)
+        self.icon_scene_error = self.am.get_icon(icon_scene_error)
         self.margin_top = margin_top
         self.margin_right = margin_right
         self.margin_bottom = margin_bottom
         self.margin_left = margin_left
         self.icon_x_offset = icon_x_offset
         self.icon_y_offset = icon_y_offset
+
+        # Scene active ?
+        self.scene_name = scene_name
+        self.scene_active = None
     # end __init__
 
-    # region PUBLIC
+    # region PRIVATE
 
-    # Set countdown state
-    def set_countdown_state(self, state: str):
+    def _get_icon(self):
         """
-        Set the countdown state.
+        Get the icon for the button.
 
-        :param state: Countdown state ("inactive", "active", "paused").
-        :type state: str
+        :return: The icon for the button.
         """
-        self._countdown_state = state
-        Logger.inst().info(f"{self.__class__.__name__} {self.name} countdown state set to {state}.")
-    # end set_countdown_state
-
-    # endregion PUBLIC
-
-    # region RENDER
-
-    # Format the time based on the selected mode
-    def _format_time(self) -> str:
-        """
-        Format the time based on the selected mode.
-
-        :return: Formatted time string.
-        """
-        total = max(0, int(self.duration))
-
-        # Format the time string based on the selected mode
-        hours = f"{total // 3600:02}"
-        minutes = f"{(total % 3600) // 60:02}"
-
-        # Return the formatted time string
-        if total // 3600 > 0:
-            return f"{hours}h{minutes}"
+        if self.scene_active:
+            return self.icon_scene_active
+        elif self.scene_active is not None:
+            return self.icon_scene_inactive
         else:
-            return f"{minutes}m"
+            return self.icon_scene_error
         # end if
-    # end _format_time
+    # end _get_icon
 
-    # Get state icon
-    def _get_state_icon(self) -> Image.Image:
-        """
-        Get the icon for the current state.
-
-        Returns:
-            Image.Image: The icon for the current state.
-        """
-        if self._countdown_state == "active":
-            return self.icon_current
-        elif self._countdown_state == "next":
-            return self.icon_next
-        elif self._countdown_state == "active_next":
-            return self.icon_current_next
-        # end if
-        return self.icon_background
-    # end _get_state_icon
-
-    # Render the icon
-    def _render_icon(self, active: bool = False) -> Image.Image:
-        """
-        Render the icon for the button.
-
-        :param active: Whether the button is active or not.
-        :type active: bool
-        :return: The rendered icon image.
-        """
-        base_icon = self.icon_pressed if active else self._get_state_icon()
-        image = base_icon.copy().convert("RGBA")
-        draw = ImageDraw.Draw(image)
-
-        if self.action == "start":
-            text = self._format_time()
-            bbox = draw.textbbox((0, 0), text, font=self.font)
-            text_width = bbox[2] - bbox[0]
-            text_height = bbox[3] - bbox[1]
-            x = (512 - text_width) / 2 + self.icon_x_offset
-            y = (512 - text_height) / 2 + self.icon_y_offset
-            draw.text((x, y), text, font=self.font, fill=self.font_color)
-        # end if
-
-        return image
-    # end _render_icon
-
-    # endregion RENDER
+    # endregion PRIVATE
 
     # region EVENTS
 
-    # Receive data from dispatching
     def on_dispatch_received(self, source: Item, data: dict):
         """
-        Dispatch data to the item.
+        Dispatch the data to the appropriate method.
 
         :param source: Source item.
         :type source: Item
         :param data: Data to dispatch.
         :type data: dict
         """
-        # Log
-        Logger.inst().event(self.__class__.__name__, self.name, "on_dispatch_received")
+        Logger.inst().event("OBSSceneButton", self.name, "dispatch", data=data)
 
-        # Action and duration
-        action = data.get("action")
-        duration = data.get("duration", 0)
+        # Initialisation or update scene
+        if data['event'] == "on_obs_connected" or data['event'] == "on_current_program_scene_changed":
+            try:
+                # Get the current scene
+                obs_scene = self.parent.get_scene(self.scene_name)
 
-        # Current state
-        current_state = self._countdown_state
+                # Check if the scene is active
+                self.scene_active = obs_scene.current
 
-        # Action
-        if action == "update":
-            if duration == self.duration:
-                self._countdown_state = "active"
-            else:
-                self._countdown_state = "inactive"
-            # end if
-        elif action == "next":
-            if duration == self.duration:
-                if self._countdown_state == "active":
-                    self._countdown_state = "active_next"
-                else:
-                    self._countdown_state = "next"
-                # end if
-            # end if
-        # end if
+                # Debug log
+                Logger.inst().debug(f"Scene \"{self.scene_name}\" is active={self.scene_active} ({obs_scene})")
 
-        # State changed
-        if self._countdown_state != current_state:
-            self.parent.refresh_me(item=self)
+                # Update the icon
+                self.parent.refresh_me(self)
+            except ws_exceptions.WebSocketConnectionClosedException as e:
+                Logger.inst().error(f"Failed to get scene \"{self.scene_name}\" ({e}), connection closed")
+                self.scene_active = None
+            except Exception as e:
+                Logger.inst().error(f"Failed to get scene \"{self.scene_name}\" ({e})")
+                self.scene_active = None
+            # end try
+        elif data['event'] == "on_obs_disconnected":
+            # Reset the scene active state
+            self.scene_active = None
+            Logger.inst().debug(f"Scene \"{self.scene_name}\" is active={self.scene_active}")
+            self.parent.refresh_me(self)
         # end if
     # end on_dispatch_received
 
@@ -262,7 +191,7 @@ class StartButton(Button):
         # KeyDisplay
         key_display = KeyDisplay(
             text="",
-            icon=self._render_icon()
+            icon=self._get_icon()
         )
 
         # Add margins if given
@@ -300,7 +229,7 @@ class StartButton(Button):
         # KeyDisplay
         key_display = KeyDisplay(
             text="",
-            icon=self._render_icon(active=True)
+            icon=self.icon_pressed
         )
 
         # Add margins if given
@@ -335,23 +264,22 @@ class StartButton(Button):
         """
         Logger.inst().info(f"{self.__class__.__name__} {self.name} released.")
 
-        if self.action == "start":
-            # self.parent.dispatch(source=self, data={'action': self.action, "duration": self.duration})
-            self.parent.add_countdown(self.duration)
-        elif self.action == "pause":
-            self.parent.pause_countdown()
-            # self.parent.dispatch(source=self, data={'action': self.action})
-        elif self.action == "stop":
-            self.parent.stop_countdown()
-            # self.parent.dispatch(source=self, data={'action': self.action})
-        else:
-            raise ValueError(f"Unknown action: {self.action}")
-        # end if
+        # Change scene
+        try:
+            self.parent.change_scene(self.scene_name)
+            Logger.inst().info(f"Changed scene to: {self.scene_name}")
+        except ws_exceptions.WebSocketConnectionClosedException as e:
+            Logger.inst().error(f"Failed to change scene: {self.scene_name} → {e}, connection closed")
+            self.scene_active = None
+        except Exception as e:
+            Logger.inst().error(f"Failed to change scene: {self.scene_name} → {e}")
+            self.scene_active = None
+        # end try
 
         # KeyDisplay
         key_display = KeyDisplay(
             text="",
-            icon=self._render_icon()
+            icon=self._get_icon()
         )
 
         # Add margins if given
@@ -376,5 +304,5 @@ class StartButton(Button):
 
     # endregion EVENTS
 
-# end StartButton
+# end OBSSceneButton
 

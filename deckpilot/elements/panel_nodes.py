@@ -33,6 +33,7 @@ from pathlib import Path
 from rich.console import Console
 from rich.text import Text
 from rich.tree import Tree
+from playsound import playsound
 
 from deckpilot.utils import Logger
 from deckpilot.core import DeckRenderer, KeyDisplay
@@ -337,7 +338,18 @@ class ParentButton(Button):
     """
 
     # Constructor
-    def __init__(self, name, parent):
+    def __init__(
+            self,
+            name,
+            parent,
+            label: Optional[str] = None,
+            icon_inactive: str = "parent",
+            icon_pressed: str = "parent_pressed",
+            margin_top: Optional[int] = None,
+            margin_right: Optional[int] = None,
+            margin_bottom: Optional[int] = None,
+            margin_left: Optional[int] = None
+    ):
         """
         Constructor for the ParentButton class.
 
@@ -347,8 +359,13 @@ class ParentButton(Button):
         :type parent: PanelNode
         """
         super().__init__(name=name, parent=parent)
-        self.icon_inactive = self.am.get_icon("parent")
-        self.icon_active = self.am.get_icon("parent_pressed")
+        self.icon_inactive = self.am.get_icon(icon_inactive)
+        self.icon_active = self.am.get_icon(icon_pressed)
+        self._label = name if label is None else label
+        self.margin_top = margin_top
+        self.margin_right = margin_right
+        self.margin_bottom = margin_bottom
+        self.margin_left = margin_left
     # end __init__
 
     # region EVENTS
@@ -368,6 +385,78 @@ class ParentButton(Button):
         return None
     # end on_item_released
 
+    def on_item_rendered(self) -> Optional[KeyDisplay]:
+        """
+        Render button
+        """
+        # Log
+        Logger.inst().event(self.__class__.__name__, self.name, "on_item_renderer")
+
+        # KeyDisplay
+        key_display = KeyDisplay(
+            text=self._label,
+            icon=self.icon_inactive
+        )
+
+        # Add margins if given
+        if self.margin_top is not None:
+            key_display.margin_top = self.margin_top
+        # end if
+
+        if self.margin_right is not None:
+            key_display.margin_right = self.margin_right
+        # end if
+
+        if self.margin_bottom is not None:
+            key_display.margin_bottom = self.margin_bottom
+        # end if
+
+        if self.margin_left is not None:
+            key_display.margin_left = self.margin_left
+        # # end if
+
+        # Return icon
+        return key_display
+    # end on_item_rendered
+
+    def on_item_pressed(self, key_index) -> Optional[KeyDisplay]:
+        """
+        Event handler for the "on_item_pressed" event.
+        """
+        # Log
+        Logger.inst().event(self.__class__.__name__, self.name, "on_item_pressed")
+        icon = self.icon_active
+
+        # Set pressed
+        self._pressed = True
+
+        # KeyDisplay
+        key_display = KeyDisplay(
+            text=self._label,
+            icon=icon
+        )
+
+        # Add margins if given
+        if self.margin_top is not None:
+            key_display.margin_top = self.margin_top
+        # end if
+
+        if self.margin_right is not None:
+            key_display.margin_right = self.margin_right
+        # end if
+
+        if self.margin_bottom is not None:
+            key_display.margin_bottom = self.margin_bottom
+        # end if
+
+        if self.margin_left is not None:
+            key_display.margin_left = self.margin_left
+        # # end if
+
+        # Get the icon
+        return key_display
+    # end on_item_pressed
+
     # endregion EVENTS
 
 # end ParentButton
@@ -380,7 +469,18 @@ class NextPageButton(Button):
     """
 
     # Constructor
-    def __init__(self, name, parent):
+    def __init__(
+            self,
+            name,
+            parent,
+            label: Optional[str] = None,
+            icon_inactive: str = "parent",
+            icon_pressed: str = "parent_pressed",
+            margin_top: Optional[int] = None,
+            margin_right: Optional[int] = None,
+            margin_bottom: Optional[int] = None,
+            margin_left: Optional[int] = None
+    ):
         """
         Constructor for the NextPageButton class.
 
@@ -388,13 +488,66 @@ class NextPageButton(Button):
         :type name: str
         :param parent: Parent panel.
         :type parent: PanelNode
+        :param icon_inactive: Icon for the inactive state.
+        :type icon_inactive: str
+        :param icon_pressed: Icon for the active state.
+        :type icon_pressed: str
+        :param margin_top: Top margin.
+        :type margin_top: int
+        :param margin_right: Right margin.
+        :type margin_right: int
+        :param margin_right: int
+        :type margin_right: int
+        :param margin_bottom: Bottom margin.
+        :type margin_bottom: int
+        :param margin_left: Left margin.
+        :type margin_left: int
         """
         super().__init__(name=name, parent=parent)
-        self.icon_inactive = self.am.get_icon("next_page")
-        self.icon_active = self.am.get_icon("next_page_pressed")
+        self.icon_inactive = self.am.get_icon(icon_inactive)
+        self.icon_active = self.am.get_icon(icon_pressed)
+        self._label = name if label is None else label
+        self.margin_top = margin_top
+        self.margin_right = margin_right
+        self.margin_bottom = margin_bottom
+        self.margin_left = margin_left
     # end __init__
 
     # region EVENTS
+
+    def on_item_rendered(self) -> Optional[KeyDisplay]:
+        """
+        Render button
+        """
+        # Log
+        Logger.inst().event(self.__class__.__name__, self.name, "on_item_renderer")
+
+        # KeyDisplay
+        key_display = KeyDisplay(
+            text=self._label,
+            icon=self.icon_inactive
+        )
+
+        # Add margins if given
+        if self.margin_top is not None:
+            key_display.margin_top = self.margin_top
+        # end if
+
+        if self.margin_right is not None:
+            key_display.margin_right = self.margin_right
+        # end if
+
+        if self.margin_bottom is not None:
+            key_display.margin_bottom = self.margin_bottom
+        # end if
+
+        if self.margin_left is not None:
+            key_display.margin_left = self.margin_left
+        # # end if
+
+        # Return icon
+        return key_display
+    # end on_item_rendered
 
     def on_item_released(self, key_index):
         """
@@ -410,6 +563,44 @@ class NextPageButton(Button):
         return None
     # end on_item_released
 
+    def on_item_pressed(self, key_index) -> Optional[KeyDisplay]:
+        """
+        Event handler for the "on_item_pressed" event.
+        """
+        # Log
+        Logger.inst().event(self.__class__.__name__, self.name, "on_item_pressed")
+        icon = self.icon_active
+
+        # Set pressed
+        self._pressed = True
+
+        # KeyDisplay
+        key_display = KeyDisplay(
+            text=self._label,
+            icon=icon
+        )
+
+        # Add margins if given
+        if self.margin_top is not None:
+            key_display.margin_top = self.margin_top
+        # end if
+
+        if self.margin_right is not None:
+            key_display.margin_right = self.margin_right
+        # end if
+
+        if self.margin_bottom is not None:
+            key_display.margin_bottom = self.margin_bottom
+        # end if
+
+        if self.margin_left is not None:
+            key_display.margin_left = self.margin_left
+        # # end if
+
+        # Get the icon
+        return key_display
+    # end on_item_pressed
+
     # endregion EVENTS
 
 # end NextPageButton
@@ -422,7 +613,18 @@ class PreviousPageButton(Button):
     """
 
     # Constructor
-    def __init__(self, name, parent):
+    def __init__(
+            self,
+            name,
+            parent,
+            label: Optional[str] = None,
+            icon_inactive: str = "parent",
+            icon_pressed: str = "parent_pressed",
+            margin_top: Optional[int] = None,
+            margin_right: Optional[int] = None,
+            margin_bottom: Optional[int] = None,
+            margin_left: Optional[int] = None
+    ):
         """
         Constructor for the PreviousPageButton class.
 
@@ -432,8 +634,13 @@ class PreviousPageButton(Button):
         :type parent: PanelNode
         """
         super().__init__(name=name, parent=parent)
-        self.icon_inactive = self.am.get_icon("previous_page")
-        self.icon_active = self.am.get_icon("previous_page_pressed")
+        self.icon_inactive = self.am.get_icon(icon_inactive)
+        self.icon_active = self.am.get_icon(icon_pressed)
+        self._label = name if label is None else label
+        self.margin_top = margin_top
+        self.margin_right = margin_right
+        self.margin_bottom = margin_bottom
+        self.margin_left = margin_left
     # end __init__
 
     # region EVENTS
@@ -451,6 +658,78 @@ class PreviousPageButton(Button):
         # Return None because we don't want to change the icon
         return None
     # end on_item_released
+
+    def on_item_pressed(self, key_index) -> Optional[KeyDisplay]:
+        """
+        Event handler for the "on_item_pressed" event.
+        """
+        # Log
+        Logger.inst().event(self.__class__.__name__, self.name, "on_item_pressed")
+        icon = self.icon_active
+
+        # Set pressed
+        self._pressed = True
+
+        # KeyDisplay
+        key_display = KeyDisplay(
+            text=self._label,
+            icon=icon
+        )
+
+        # Add margins if given
+        if self.margin_top is not None:
+            key_display.margin_top = self.margin_top
+        # end if
+
+        if self.margin_right is not None:
+            key_display.margin_right = self.margin_right
+        # end if
+
+        if self.margin_bottom is not None:
+            key_display.margin_bottom = self.margin_bottom
+        # end if
+
+        if self.margin_left is not None:
+            key_display.margin_left = self.margin_left
+        # # end if
+
+        # Get the icon
+        return key_display
+    # end on_item_pressed
+
+    def on_item_rendered(self) -> Optional[KeyDisplay]:
+        """
+        Render button
+        """
+        # Log
+        Logger.inst().event(self.__class__.__name__, self.name, "on_item_renderer")
+
+        # KeyDisplay
+        key_display = KeyDisplay(
+            text=self._label,
+            icon=self.icon_inactive
+        )
+
+        # Add margins if given
+        if self.margin_top is not None:
+            key_display.margin_top = self.margin_top
+        # end if
+
+        if self.margin_right is not None:
+            key_display.margin_right = self.margin_right
+        # end if
+
+        if self.margin_bottom is not None:
+            key_display.margin_bottom = self.margin_bottom
+        # end if
+
+        if self.margin_left is not None:
+            key_display.margin_left = self.margin_left
+        # end if
+
+        # Return icon
+        return key_display
+    # end on_item_rendered
 
     # endregion EVENTS
 
@@ -725,17 +1004,108 @@ class Panel(Item):
             path: Path,
             renderer: DeckRenderer,
             parent: Optional['Panel'] = None,
-            active: bool = False
+            active: bool = False,
+            label: Optional[str] = None,
+            icon_inactive: str = "default_panel",
+            icon_pressed: str = "default_panel_pressed",
+            margin_top: Optional[int] = None,
+            margin_right: Optional[int] = None,
+            margin_bottom: Optional[int] = None,
+            margin_left: Optional[int] = None,
+            parent_bouton_icon_inactive: str = "parent",
+            parent_bouton_icon_pressed: str = "parent_pressed",
+            parent_bouton_label: Optional[str] = None,
+            parent_bouton_margin_top: Optional[int] = None,
+            parent_bouton_margin_right: Optional[int] = None,
+            parent_bouton_margin_bottom: Optional[int] = None,
+            parent_bouton_margin_left: Optional[int] = None,
+            next_page_bouton_icon_inactive: str = "next_page",
+            next_page_bouton_icon_pressed: str = "next_page_pressed",
+            next_page_bouton_label: Optional[str] = None,
+            next_page_bouton_margin_top: Optional[int] = None,
+            next_page_bouton_margin_right: Optional[int] = None,
+            next_page_bouton_margin_bottom: Optional[int] = None,
+            next_page_bouton_margin_left: Optional[int] = None,
+            previous_page_bouton_icon_inactive: str = "previous_page",
+            previous_page_bouton_icon_pressed: str = "previous_page_pressed",
+            previous_page_bouton_label: Optional[str] = None,
+            previous_page_bouton_margin_top: Optional[int] = None,
+            previous_page_bouton_margin_right: Optional[int] = None,
+            previous_page_bouton_margin_bottom: Optional[int] = None,
+            previous_page_bouton_margin_left: Optional[int] = None,
+            activated_sound: Optional[str] = None,
     ):
         """
         Constructor for the PanelNode class.
 
-        Args:
-            name (str): Name of the panel.
-            path (Path): Path to the panel directory.
-            renderer (DeckRenderer): Deck renderer instance.
-            parent (PanelNode): Parent panel.
-            active (bool): Active state.
+        :param name: Name of the panel.
+        :type name: str
+        :param path: Path to the panel directory.
+        :type path: Path
+        :param renderer: Deck renderer instance.
+        :type renderer: DeckRenderer
+        :param parent: Parent panel.
+        :type parent: PanelNode
+        :param active: Active state.
+        :type active: bool
+        :param label: Label for the panel.
+        :type label: str
+        :param icon_inactive: Icon for the inactive state.
+        :type icon_inactive: str
+        :param icon_pressed: Icon for the active state.
+        :type icon_pressed: str
+        :param margin_top: Top margin.
+        :type margin_top: int
+        :param margin_right: Right margin.
+        :type margin_right: int
+        :param margin_bottom: Bottom margin.
+        :type margin_bottom: int
+        :param margin_left: Left margin.
+        :type margin_left: int
+        :param parent_bouton_icon_inactive: Icon for the parent button inactive state.
+        :type parent_bouton_icon_inactive: str
+        :param parent_bouton_icon_pressed: Icon for the parent button active state.
+        :type parent_bouton_icon_pressed: str
+        :param parent_bouton_label: Label for the parent button.
+        :type parent_bouton_label: str
+        :param parent_bouton_margin_top: Top margin for the parent button.
+        :type parent_bouton_margin_top: int
+        :param parent_bouton_margin_right: Right margin for the parent button.
+        :type parent_bouton_margin_right: int
+        :param parent_bouton_margin_bottom: Bottom margin for the parent button.
+        :type parent_bouton_margin_bottom: int
+        :param parent_bouton_margin_left: Left margin for the parent button.
+        :type parent_bouton_margin_left: int
+        :param next_page_bouton_icon_inactive: Icon for the next page button inactive state.
+        :type next_page_bouton_icon_inactive: str
+        :param next_page_bouton_icon_pressed: Icon for the next page button active state.
+        :type next_page_bouton_icon_pressed: str
+        :param next_page_bouton_label: Label for the next page button.
+        :type next_page_bouton_label: str
+        :param next_page_bouton_margin_top: Top margin for the next page button.
+        :type next_page_bouton_margin_top: int
+        :param next_page_bouton_margin_right: Right margin for the next page button.
+        :type next_page_bouton_margin_right: int
+        :param next_page_bouton_margin_bottom: Bottom margin for the next page button.
+        :type next_page_bouton_margin_bottom: int
+        :param next_page_bouton_margin_left: Left margin for the next page button.
+        :type next_page_bouton_margin_left: int
+        :param previous_page_bouton_icon_inactive: Icon for the previous page button inactive state.
+        :type previous_page_bouton_icon_inactive: str
+        :param previous_page_bouton_icon_pressed: Icon for the previous page button active state.
+        :type previous_page_bouton_icon_pressed: str
+        :param previous_page_bouton_label: Label for the previous page button.
+        :type previous_page_bouton_label: str
+        :param previous_page_bouton_margin_top: Top margin for the previous page button.
+        :type previous_page_bouton_margin_top: int
+        :param previous_page_bouton_margin_right: Right margin for the previous page button.
+        :type previous_page_bouton_margin_right: int
+        :param previous_page_bouton_margin_bottom: Bottom margin for the previous page button.
+        :type previous_page_bouton_margin_bottom: int
+        :param previous_page_bouton_margin_left: Left margin for the previous page button.
+        :type previous_page_bouton_margin_left: int
+        :param activated_sound: Click sound when the panel is activated.
+        :type activated_sound: str
         """
         super().__init__(
             name,
@@ -751,14 +1121,45 @@ class Panel(Item):
         self.renderer = renderer
         self._active = active
         self.current_page_number = 0
+        self._label = name if label is None else label
+        self.margin_top = margin_top
+        self.margin_right = margin_right
+        self.margin_bottom = margin_bottom
+        self.margin_left = margin_left
+
+        # Parent bouton
+        self.parent_bouton_icon_inactive = parent_bouton_icon_inactive
+        self.parent_bouton_icon_pressed = parent_bouton_icon_pressed
+        self.parent_bouton_label = name if parent_bouton_label is None else parent_bouton_label
+        self.parent_bouton_margin_top = parent_bouton_margin_top
+        self.parent_bouton_margin_right = parent_bouton_margin_right
+        self.parent_bouton_margin_bottom = parent_bouton_margin_bottom
+        self.parent_bouton_margin_left = parent_bouton_margin_left
+
+        # Next page button
+        self.next_page_bouton_icon_inactive = next_page_bouton_icon_inactive
+        self.next_page_bouton_icon_pressed = next_page_bouton_icon_pressed
+        self.next_page_bouton_label = name if next_page_bouton_label is None else next_page_bouton_label
+        self.next_page_bouton_margin_top = next_page_bouton_margin_top
+        self.next_page_bouton_margin_right = next_page_bouton_margin_right
+        self.next_page_bouton_margin_bottom = next_page_bouton_margin_bottom
+        self.next_page_bouton_margin_left = next_page_bouton_margin_left
+
+        # Previous page button
+        self.previous_page_bouton_icon_inactive = previous_page_bouton_icon_inactive
+        self.previous_page_bouton_icon_pressed = previous_page_bouton_icon_pressed
+        self.previous_page_bouton_label = name if previous_page_bouton_label is None else previous_page_bouton_label
+        self.previous_page_bouton_margin_top = previous_page_bouton_margin_top
+        self.previous_page_bouton_margin_right = previous_page_bouton_margin_right
+        self.previous_page_bouton_margin_bottom = previous_page_bouton_margin_bottom
+        self.previous_page_bouton_margin_left = previous_page_bouton_margin_left
 
         # Icons
-        self.parent_folder_icon = context.asset_manager.get_icon("parent_folder")
-        self.next_page_icon = context.asset_manager.get_icon("next_page")
-        self.previous_page_icon = context.asset_manager.get_icon("previous_page")
-        self.button_default_icon = context.asset_manager.get_icon("button_default")
-        self.icon_inactive = self.am.get_icon("default_panel")
-        self.icon_active = self.am.get_icon("default_panel_pressed")
+        self.icon_inactive = self.am.get_icon(icon_inactive)
+        self.icon_active = self.am.get_icon(icon_pressed)
+
+        # Click sound
+        self.activated_sound = activated_sound
 
         # Events
         event_bus.subscribe(self, EventType.KEY_RELEASED, self.on_key_released)
@@ -1065,14 +1466,32 @@ class Panel(Item):
         child_name = child_config['name']
         Logger.inst().info(f"Loading child: {child_path}, {child_name}")
 
+        # Check if the child is in a python file
+        child_class = None
+        if 'class_path' in child_config:
+            child_class_path = child_path / child_config['class_path']
+            if child_class_path.exists():
+                loaded_child_class = self._load_panel_class(child_class_path)
+                if loaded_child_class:
+                    child_class = loaded_child_class
+                # end i
+            # end if
+        # end if
+
+        # If child class not loaded, then use Panel
+        if child_class is None:
+            child_class = Panel
+        # end if
+
         # If the child has a path directory which is not special (., ..), add it.
         if child_path.exists() and child_path.is_dir():
             child_params = child_config['params'] if 'params' in child_config else {}
-            child = Panel(
+            child = child_class(
                 name=child_name,
                 path=child_path,
                 parent=self,
                 renderer=self.renderer,
+                active=False,
                 **child_params
             )
             self.add_child(child.name, child)
@@ -1081,6 +1500,40 @@ class Panel(Item):
             Logger.inst().error(f"Child {child_name} not valid: {child_path}")
         # end if
     # end load_child
+
+    # Play sound
+    def play_sound(self, sound_name: str):
+        """
+        Plays the activation sound.
+
+        Args:
+            sound_name (str): Name of the sound to play.
+        """
+        self.am.play_sound(sound_name)
+    # end play_sound
+
+    # Refresh me (item)
+    def refresh_me(self, item: Item):
+        """
+        Refreshes the item on the panel.
+
+        :param item: Item to refresh.
+        """
+        # Log
+        Logger.inst().debug(f"{self.__class__.__name__} ({self.name}) Refreshing item {item.name} on panel {self.name}")
+        if item in self.items.values() and isinstance(item, Item) and self.active:
+            # Get the index of the item
+            key_index = self.pages[self.current_page_number].get_item_position(item)
+            key_display = event_bus.send_event(item, EventType.ITEM_RENDERED)
+            if key_display:
+                Logger.inst().debug(f"REFRESHING {item} key_display:{key_display}")
+                self.renderer.render_key(
+                    key_index=key_index,
+                    key_display=key_display
+                )
+            # end if
+        # end if
+    # end refresh_me
 
     # Render panel
     def render(self):
@@ -1155,6 +1608,43 @@ class Panel(Item):
         # end if
         return 0
     # end _compute_key_shift
+
+    # Load panel class
+    def _load_panel_class(self, filepath: Union[Path, str]) -> Optional[type]:
+        """
+        Load a panel class dynamically from a Python file.
+
+        :param filepath: Path to the panel file.
+        :type filepath: Union[Path, str]
+        :return: Panel class.
+        :rtype: type
+        """
+        # Module name
+        if isinstance(filepath, Path):
+            module_name = os.path.splitext(filepath.name)[0]
+        else:
+            module_name = os.path.splitext(os.path.basename(filepath))[0]
+        # end if
+
+        # Try
+        try:
+            spec = importlib.util.spec_from_file_location(module_name, str(filepath))
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+
+            # Find panel class
+            for attr in dir(module):
+                obj = getattr(module, attr)
+                if isinstance(obj, type) and issubclass(obj, Panel) and obj is not Panel:
+                    return obj
+                # end if
+            # end for
+        except Exception as e:
+            Logger.inst().error(f"Loading {filepath}: {e}")
+        # end try
+
+        return None
+    # end _load_panel_class
 
     # Load button class
     def _load_button_class(self, filepath: Union[Path, str]) -> Optional[type]:
@@ -1335,7 +1825,19 @@ class Panel(Item):
 
         # Add the parent button if needed
         if self.parent:
-            page.push(ParentButton(name="Parent", parent=self))
+            page.push(
+                    ParentButton(
+                    name="Parent",
+                    parent=self,
+                    label=self.parent_bouton_label,
+                    icon_inactive=self.parent_bouton_icon_inactive,
+                    icon_pressed=self.parent_bouton_icon_pressed,
+                    margin_top=self.parent_bouton_margin_top,
+                    margin_right=self.parent_bouton_margin_right,
+                    margin_bottom=self.parent_bouton_margin_bottom,
+                    margin_left=self.parent_bouton_margin_left
+                )
+            )
         # If the page is empty, and there is a previous page, add the previous page button
 
         # Copy items
@@ -1351,16 +1853,40 @@ class Panel(Item):
             #     page.push(ParentButton(name="Parent", parent=self))
             # If the page is empty, and there is a previous page, add the previous page button
             if len(pages) > 1 and page.is_empty:
-                page.push(PreviousPageButton(name="PreviousPage", parent=self))
+                page.push(
+                    PreviousPageButton(
+                        name="PreviousPage",
+                        parent=self,
+                        label=self.previous_page_bouton_label,
+                        icon_inactive=self.previous_page_bouton_icon_inactive,
+                        icon_pressed=self.previous_page_bouton_icon_pressed,
+                        margin_top=self.previous_page_bouton_margin_top,
+                        margin_right=self.previous_page_bouton_margin_right,
+                        margin_bottom=self.previous_page_bouton_margin_bottom,
+                        margin_left=self.previous_page_bouton_margin_left
+                    )
+                )
             # end if
 
             # If it's not the last space, add the item
             # OR if it's the last space and there is only one item left, add the item
-            if page.space_left > 1 or (page.space_left == 1 and len(items_to_add) == 1):
+            if page.space_left > 1 or (page.space_left == 1 and len(items_to_add) == 0):
                 page.push(item)
             else:
                 # If there is one space left, add the next page button
-                page.push(NextPageButton(name="NextPage", parent=self))
+                page.push(
+                    NextPageButton(
+                        name="NextPage",
+                        parent=self,
+                        label=self.next_page_bouton_label,
+                        icon_inactive=self.next_page_bouton_icon_inactive,
+                        icon_pressed=self.next_page_bouton_icon_pressed,
+                        margin_top=self.next_page_bouton_margin_top,
+                        margin_right=self.next_page_bouton_margin_right,
+                        margin_bottom=self.next_page_bouton_margin_bottom,
+                        margin_left=self.next_page_bouton_margin_left
+                    )
+                )
                 items_to_add.insert(0, item)
             # end if
 
@@ -1392,6 +1918,7 @@ class Panel(Item):
         """
         Event handler for the "panel_activated" event.
         """
+        self.am.play_sound(self.activated_sound)
         Logger.inst().event(self.__class__.__name__, self.name, "on_panel_activated")
     # end on_panel_activated
 
@@ -1451,11 +1978,31 @@ class Panel(Item):
         # Log
         Logger.inst().event(self.__class__.__name__, self.name, "on_item_rendered")
 
-        # Return icon
-        return KeyDisplay(
-            text=self.name,
+        # KeyDisplay
+        key_display = KeyDisplay(
+            text=self._label,
             icon=self.icon_inactive
         )
+
+        # Add margins if given
+        if self.margin_top is not None:
+            key_display.margin_top = self.margin_top
+        # end if
+
+        if self.margin_right is not None:
+            key_display.margin_right = self.margin_right
+        # end if
+
+        if self.margin_bottom is not None:
+            key_display.margin_bottom = self.margin_bottom
+        # end if
+
+        if self.margin_left is not None:
+            key_display.margin_left = self.margin_left
+        # # end if
+
+        # Return icon
+        return key_display
     # end on_item_rendered
 
     # On item pressed
@@ -1469,11 +2016,31 @@ class Panel(Item):
         # Log
         Logger.inst().event(self.__class__.__name__, self.name, "on_item_pressed", key_index=key_index)
 
-        # Return icon
-        return KeyDisplay(
-            text=self.name,
+        # KeyDisplay
+        key_display = KeyDisplay(
+            text=self._label,
             icon=self.icon_active
         )
+
+        # Add margins if given
+        if self.margin_top is not None:
+            key_display.margin_top = self.margin_top
+        # end if
+
+        if self.margin_right is not None:
+            key_display.margin_right = self.margin_right
+        # end if
+
+        if self.margin_bottom is not None:
+            key_display.margin_bottom = self.margin_bottom
+        # end if
+
+        if self.margin_left is not None:
+            key_display.margin_left = self.margin_left
+        # # end if
+
+        # Return icon
+        return key_display
     # end on_item_pressed
 
     # On dispatch received
@@ -1554,9 +2121,9 @@ class Panel(Item):
 
         # Propagate to children
         for i, page_item in enumerate(self.pages[self.current_page_number]):
-            Logger.inst().debug(f"on_periodic_tick {i} {page_item}")
+            Logger.inst().debugg(f"on_periodic_tick {i} {page_item}")
             if isinstance(page_item.item, Button):
-                Logger.inst().debug(f"on_periodic_tick {i} {page_item.item} is button")
+                Logger.inst().debugg(f"on_periodic_tick {i} {page_item.item} is button")
                 key_display = event_bus.send_event(page_item.item, EventType.CLOCK_TICK, data=(time_i, time_count))
                 if key_display:
                     Logger.inst().debug(f"RENDER_KEY {i} {key_display}")

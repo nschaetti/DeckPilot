@@ -45,8 +45,11 @@ class CountdownButton(Button):
             parent,
             mode: str = "seconds",  # "hours", "minutes", "seconds"
             duration: int = 0,       # Durée initiale en secondes
+            alarm_mode_time: int = 5,  # Durée de l'alarme en secondes
             font_family: str = "Roboto-Bold",
-            font_size: int = 360
+            font_size: int = 360,
+            icon_x_offset: Optional[int] = 0,
+            icon_y_offset: Optional[int] = 0,
     ):
         """
         Constructor for the CountdownButton class.
@@ -58,6 +61,10 @@ class CountdownButton(Button):
         :param duration: Duration of the countdown in seconds.
         :param font_family: Font family for the countdown display.
         :param font_size: Font size for the countdown display.
+        :param icon_x_offset: X offset for the icon.
+        :type icon_x_offset: Optional[int]
+        :param icon_y_offset: Y offset for the icon.
+        :type icon_y_offset: Optional[int]
         """
         super().__init__(name, path, parent)
         Logger.inst().info(f"CountdownButton {name} created with mode = {mode} and duration = {duration}s")
@@ -68,7 +75,11 @@ class CountdownButton(Button):
         self.remaining = duration
         self._end_time = None
         self.running = False
+        self.alarm_end = None
+        self.alarm_mode_time = alarm_mode_time
         self.font = self.am.get_font(font_family, font_size)
+        self.icon_x_offset = icon_x_offset
+        self.icon_y_offset = icon_y_offset
     # end __init__
 
     # region PRIVATE METHODS
@@ -87,6 +98,23 @@ class CountdownButton(Button):
             self.running = True
         # end if
     # end _start
+
+    # Pause the countdown
+    def _pause(self):
+        """
+        Pause the countdown.
+        """
+        Logger.inst().info(f"CountdownButton {self.name} paused")
+        if self.running:
+            self.remaining = max(0, (self._end_time - datetime.now()).total_seconds())
+            self._end_time = None
+            self.running = False
+        else:
+            Logger.inst().info(f"CountdownButton {self.name} is already paused")
+            self._end_time = datetime.now() + timedelta(seconds=self.remaining)
+            self.running = True
+        # end if
+    # end _pause
 
     def _restart(self):
         """
@@ -120,11 +148,11 @@ class CountdownButton(Button):
         total = max(0, int(self.remaining))
 
         if self.mode == "hours":
-            return f"{total // 3600:02}" + "h"
+            return f"{total // 3600:02}"
         elif self.mode == "minutes":
-            return f"{(total % 3600) // 60:02}" + "m"
+            return f"{(total % 3600) // 60:02}"
         elif self.mode == "seconds":
-            return f"{total % 60:02}" + "s"
+            return f"{total % 60:02}"
         else:
             return "--"
         # end if
@@ -137,20 +165,37 @@ class CountdownButton(Button):
 
         :return: The rendered icon image.
         """
-        image = Image.new("RGB", (512, 512), "black")
+        background_color = "black" if self.alarm_end is None else "red"
+        text_color = "white" if self.alarm_end is None else "black"
+
+        # Create a new image with the specified background color
+        image = Image.new("RGB", (512, 512), background_color)
         draw = ImageDraw.Draw(image)
         text = self._format_time()
 
         bbox = draw.textbbox((0, 0), text, font=self.font)
         text_width = bbox[2] - bbox[0]
         text_height = bbox[3] - bbox[1]
-        x = (512 - text_width) / 2
-        y = (512 - text_height) / 2
 
-        draw.text((x, y), text, font=self.font, fill="white")
+        x = (512 - text_width) / 2 + self.icon_x_offset
+        y = (512 - text_height) / 2 + self.icon_y_offset
+
+        draw.text((x, y), text, font=self.font, fill=text_color)
         return image
     # end _render_icon
 
+    # Put the button on alarm mode (red background for x seconds)
+    def _set_alarm_mode(self):
+        """
+        Set the button to alarm mode (red background for x seconds).
+        """
+        Logger.inst().info(f"CountdownButton {self.name} alarm mode")
+
+        # Set the alarm mode
+        self.alarm_end = datetime.now() + timedelta(seconds=self.alarm_mode_time)
+
+        # Refresh the button
+        self.parent.refresh_me(item=self)
     # endregion RENDER
 
     # region EVENTS
@@ -175,12 +220,14 @@ class CountdownButton(Button):
         # Action
         if action == "start":
             self._start(duration)
+        elif action == "pause":
+            self._pause()
         elif action == "stop":
             self._stop()
         elif action == "restart":
             self._restart()
-        else:
-            Logger.inst().error(f"Unknown action: {action}")
+        elif action == "alarm":
+            self._set_alarm_mode()
         # end if
     # end on_dispatch_received
 
@@ -191,10 +238,15 @@ class CountdownButton(Button):
 
         :return: The rendered button display.
         """
-        return KeyDisplay(
+        key_display = KeyDisplay(
             text="",
             icon=self._render_icon()
         )
+        key_display.margin_top = 0
+        key_display.margin_right = 0
+        key_display.margin_bottom = 0
+        key_display.margin_left = 0
+        return key_display
     # end on_item_rendered
 
     def on_item_released(self, key_index) -> Optional[KeyDisplay]:
@@ -217,12 +269,19 @@ class CountdownButton(Button):
         :param time_count: The total number of time indices.
         :return: The rendered button display.
         """
-        if self._end_time:
+        # Countdown is running
+        if self._end_time and self.running:
             delta = (self._end_time - datetime.now()).total_seconds()
             self.remaining = max(0, delta)
             if self.remaining <= 0:
-                self._stop()
+                self.parent.stop_countdown(play_sound=True)
             # end if
+        # end if
+
+        # Alarm mode
+        if self.alarm_end and datetime.now() >= self.alarm_end:
+            self.alarm_end = None
+            self.parent.refresh_me(item=self)
         # end if
 
         return self.on_item_rendered()

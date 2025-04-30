@@ -1,0 +1,177 @@
+#
+# OBS
+#
+
+# Start Stream
+[[items]]
+name = "obs_scene_start_stream"
+path = "obs_scene_button.py"
+type = "button"
+
+[items.params]
+scene_name = "Before Stream"
+icon_scene_inactive = "obs_scene_start_stream_inactive"
+icon_scene_active = "obs_scene_start_stream_active"
+icon_pressed = "obs_scene_start_stream_pressed"
+icon_scene_error = "obs_error"
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+
+# Voice recording
+[[items]]
+name = "obs_scene_voice_recoding"
+path = "obs_scene_button.py"
+type = "button"
+
+[items.params]
+scene_name = "Prise de son"
+icon_scene_inactive = "obs_scene_voice_recording_inactive"
+icon_scene_active = "obs_scene_voice_recording_active"
+icon_pressed = "obs_scene_voice_recording_pressed"
+icon_scene_error = "obs_error"
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+
+# Firefox
+[[items]]
+name = "obs_scene_firefox"
+path = "obs_scene_button.py"
+type = "button"
+
+[items.params]
+scene_name = "Capture Firefox"
+icon_scene_inactive = "obs_scene_firefox_inactive"
+icon_scene_active = "obs_scene_firefox_active"
+icon_pressed = "obs_scene_firefox_pressed"
+icon_scene_error = "obs_error"
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+
+## Left screen
+[[items]]
+name = "obs_scene_left_screen"
+path = "obs_scene_button.py"
+type = "button"
+
+[items.params]
+scene_name = "Capture d'écran (gauche)"
+icon_scene_inactive = "obs_scene_left_screen_inactive"
+icon_scene_active = "obs_scene_left_screen_active"
+icon_pressed = "obs_scene_left_screen_pressed"
+icon_scene_error = "obs_error"
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+
+## Right screen
+[[items]]
+name = "obs_scene_right_screen"
+path = "obs_scene_button.py"
+type = "button"
+
+[items.params]
+scene_name = "Capture d'écran (droite)"
+icon_scene_inactive = "obs_scene_right_screen_inactive"
+icon_scene_active = "obs_scene_right_screen_active"
+icon_pressed = "obs_scene_right_screen_pressed"
+icon_scene_error = "obs_error"
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+
+# End Stream
+[[items]]
+name = "obs_scene_end_stream"
+path = "obs_scene_button.py"
+type = "button"
+
+[items.params]
+scene_name = "After Stream"
+icon_scene_inactive = "obs_scene_end_stream_inactive"
+icon_scene_active = "obs_scene_end_stream_active"
+icon_pressed = "obs_scene_end_stream_pressed"
+icon_scene_error = "obs_error"
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+
+# Recording
+[[items]]
+name = "obs_recording"
+path = "obs_record_button.py"
+type = "button"
+
+[items.params]
+icon_active = "obs_recording_active"
+icon_inactive = "obs_recording_inactive"
+icon_paused = "obs_recording_paused"
+icon_pressed = "obs_recording_pressed"
+icon_error = "obs_error"
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+
+# Streaming
+[[items]]
+name = "obs_streaming"
+path = "obs_record_button.py"
+type = "button"
+
+[items.params]
+icon_active = "obs_streaming_active"
+icon_inactive = "obs_streaming_inactive"
+icon_confirm = "obs_streaming_confirm"
+icon_pressed = "obs_streaming_pressed"
+icon_error = "obs_error"
+action = "stream"
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+
+# Mic/Aux input
+[[items]]
+name = "obs_micaux_mute_state"
+path = "obs_input_button.py"
+type = "button"
+
+[items.params]
+icon_input_active = "obs_input_micro_active"
+icon_input_inactive = "obs_input_micro_inactive"
+icon_pressed = "obs_input_micro_pressed"
+icon_input_error = "obs_error"
+is_special_input = true
+input_name = "mic1"
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+
+# "Audio du Bureau" input
+[[items]]
+name = "obs_desktop_mute_state"
+path = "obs_input_button.py"
+type = "button"
+
+[items.params]
+icon_input_active = "obs_input_desktop_active"
+icon_input_inactive = "obs_input_desktop_inactive"
+icon_pressed = "obs_input_desktop_pressed"
+icon_input_error = "obs_error"
+is_special_input = true
+input_name = "desktop1"
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+

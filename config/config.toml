@@ -14,3 +14,28 @@ hidden_clock_tick_interval = 0
 [assets]
 icons_directory = "config/icons"
 fonts_directory = "config/fonts"
+sounds_directory = "config/sounds"
+
+[root]
+next_page_bouton_icon_inactive = "next_page"
+next_page_bouton_icon_pressed = "next_page_pressed"
+next_page_bouton_label = ""
+next_page_bouton_margin_top = 0
+next_page_bouton_margin_bottom = 0
+next_page_bouton_margin_left = 0
+next_page_bouton_margin_right = 0
+previous_page_bouton_icon_inactive = "prev_page"
+previous_page_bouton_icon_pressed = "prev_page_pressed"
+previous_page_bouton_label = ""
+previous_page_bouton_margin_top = 0
+previous_page_bouton_margin_bottom = 0
+previous_page_bouton_margin_left = 0
+previous_page_bouton_margin_right = 0
+activated_sound = "click"
+
+[obs]
+obs_host = "localhost"
+obs_port = 4455
+obs_password = "obspass1234##"  # Set this to the password you set in OBS WebSocket settings
+
+

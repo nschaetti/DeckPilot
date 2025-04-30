@@ -34,6 +34,7 @@ install(show_locals=True)
 
 
 class LogLevel(IntEnum):
+    DEBUGG = 0
     DEBUG = 10
     INFO = 20
     WARNING = 30
@@ -58,7 +59,6 @@ class Logger:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._console = Console()
-            print(f"__new__: {level}")
             cls._instance._level = level
         # end if
         return cls._instance
@@ -119,7 +119,7 @@ class Logger:
 
         :param msg: The message to log.
         """
-        self._log(f"[green]DEBUGG\t\t{msg}[/]", LogLevel.DEBUG)
+        self._log(f"[green]DEBUGG\t\t{msg}[/]", LogLevel.DEBUGG)
     # end debug
 
     def info(self, msg):

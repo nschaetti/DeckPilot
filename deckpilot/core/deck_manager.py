@@ -256,7 +256,7 @@ class DeckManager:
         time_i = 0
         time_count = 0
         while True:
-            Logger.inst().debug(f"DeckManager: Sending periodic event")
+            Logger.inst().debugg(f"DeckManager: Sending periodic event")
 
             # Publish the periodic event
             event_bus.send_event(context.active_panel, EventType.CLOCK_TICK, data=(time_i, time_count))
