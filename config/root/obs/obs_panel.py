@@ -24,6 +24,7 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 import json
 # Imports
 from typing import Any, Optional, Callable
+import threading
 from enum import Enum
 from pathlib import Path
 import obsws_python as obs
@@ -168,6 +169,9 @@ class OBSConnector:
 
         # Callbacks
         self.callbacks = {}
+
+        # Lock
+        self._lock = threading.RLock()
     # end __init__
 
     # region PROPERTIES
@@ -180,7 +184,9 @@ class OBSConnector:
     # Scenes
     @property
     def scenes(self):
-        return self._scenes
+        with self._lock:
+            return self._scenes
+        # end with
     # end scenes
 
     # Event list
@@ -285,7 +291,9 @@ class OBSConnector:
         Returns:
         - dict: the stats
         """
-        return self.client.get_stats()
+        with self._lock:
+            return self.client.get_stats()
+        # end with lock
     # end get_stats
 
     # Get input kind list
@@ -298,7 +306,9 @@ class OBSConnector:
         Returns:
         - list: the list of input kinds
         """
-        return self.client.get_input_kind_list(unversioned=True)
+        with self._lock:
+            return self.client.get_input_kind_list(unversioned=True)
+        # end with lock
     # end get_input_kind_list
 
     # Get special inputs
@@ -311,7 +321,9 @@ class OBSConnector:
         Returns:
         - list: the list of special inputs
         """
-        return self.client.get_special_inputs()
+        with self._lock:
+            return self.client.get_special_inputs()
+        # end with
     # end get_special_inputs
 
     # Get input mute
@@ -325,7 +337,9 @@ class OBSConnector:
         Returns:
         - bool: the mute state
         """
-        return self.client.get_input_mute(name=name)
+        with self._lock:
+            return self.client.get_input_mute(name=name)
+        # end with
     # end get_input_mute
 
     # Toogle input mute
@@ -337,7 +351,9 @@ class OBSConnector:
         - name: str - the name of the input
         """
         # Toggle input mute
-        self.client.toggle_input_mute(name=name)
+        with self._lock:
+            self.client.toggle_input_mute(name=name)
+        # end with lock
     # end toggle_input_mute
 
     # Set input mute
@@ -349,8 +365,10 @@ class OBSConnector:
         - name: str - Name of the input to set the mute state of
         - muted: bool - Whether to mute the input or not
         """
-        # Set input mute
-        self.client.set_input_mute(name=name, muted=muted)
+        with self._lock:
+            # Set input mute
+            self.client.set_input_mute(name=name, muted=muted)
+        # end with
     # end set_input_mute
 
     # Get input volume
@@ -364,7 +382,9 @@ class OBSConnector:
         Returns:
         - float: Volume setting in dB  (>= -100, <= 26)
         """
-        return self.client.get_input_volume(name=name)
+        with self._lock:
+            return self.client.get_input_volume(name=name)
+        # end with
     # end get_input_volume
 
     # Set input volume
@@ -377,8 +397,10 @@ class OBSConnector:
         - volume_mul: int - Volume setting in mul (>= 0, <= 20)
         - volume_db: int - Volume setting in dB  (>= -100, <= 26)
         """
-        # Set input volume
-        self.client.set_input_volume(name=name, volume_mul=volume_mul, volume_db=volume_db)
+        with self._lock:
+            # Set input volume
+            self.client.set_input_volume(name=name, volume_mul=volume_mul, volume_db=volume_db)
+        # end with
     # end set_input_volume
 
     # Scene list
@@ -393,7 +415,9 @@ class OBSConnector:
         Returns:
         - list: the list of scenes
         """
-        return list(self.scenes.keys())
+        with self._lock:
+            return list(self.scenes.keys())
+        # end with
     # end scene_list
 
     # Get input state
@@ -409,11 +433,13 @@ class OBSConnector:
         :return: the state of the input
         :rtype: bool
         """
-        if input_name in self.inputs:
-            return self.inputs[input_name]
-        else:
-            raise ValueError(f"Input '{input_name}' not found")
-        # end if
+        with self._lock:
+            if input_name in self.inputs:
+                return self.inputs[input_name]
+            else:
+                raise ValueError(f"Input '{input_name}' not found")
+            # end if
+        # end with lock
     # end get_input
 
     # Get scene
@@ -430,11 +456,13 @@ class OBSConnector:
         Returns:
         - Scene: the scene object
         """
-        if scene_name in self._scenes:
-            return self._scenes.get(scene_name)
-        else:
-            raise ValueError(f"Scene '{scene_name}' not found")
-        # end if
+        with self._lock:
+            if scene_name in self._scenes:
+                return self._scenes.get(scene_name)
+            else:
+                raise ValueError(f"Scene '{scene_name}' not found")
+            # end if
+        # end with
     # end get_scene
 
     # Register event
@@ -467,8 +495,10 @@ class OBSConnector:
         Args:
         - scene_name: str - the name of the scene
         """
-        # Change scene
-        self.client.set_current_program_scene(scene_name)
+        with self._lock:
+            # Change scene
+            self.client.set_current_program_scene(scene_name)
+        # end with
     # end change_scene
 
     # Start recording
@@ -476,8 +506,10 @@ class OBSConnector:
         """
         Start recording
         """
-        # Start recording
-        self.client.start_record()
+        with self._lock:
+            # Start recording
+            self.client.start_record()
+        # end with
     # end start_recording
 
     # Stop recording
@@ -485,8 +517,10 @@ class OBSConnector:
         """
         Stop recording
         """
-        # Stop recording
-        self.client.stop_record()
+        with self._lock:
+            # Stop recording
+            self.client.stop_record()
+        # end with
     # end stop_recording
 
     # Pause recording
@@ -494,8 +528,10 @@ class OBSConnector:
         """
         Pause recording
         """
-        # Pause recording
-        self.client.pause_record()
+        with self._lock:
+            # Pause recording
+            self.client.pause_record()
+        # end with
     # end pause_recording
 
     # Resume recording
@@ -503,8 +539,10 @@ class OBSConnector:
         """
         Resume recording
         """
-        # Resume recording
-        self.client.resume_record()
+        with self._lock:
+            # Resume recording
+            self.client.resume_record()
+        # end with
     # end resume_recording
 
     # Start streaming
@@ -512,8 +550,10 @@ class OBSConnector:
         """
         Start streaming
         """
-        # Start streaming
-        self.client.start_stream()
+        with self._lock:
+            # Start streaming
+            self.client.start_stream()
+        # end with
     # end start_streaming
 
     # Stop streaming
@@ -521,8 +561,10 @@ class OBSConnector:
         """
         Stop streaming
         """
-        # Stop streaming
-        self.client.stop_stream()
+        with self._lock:
+            # Stop streaming
+            self.client.stop_stream()
+        # end with
     # end stop_streaming
 
     # region PRIVATE
@@ -536,21 +578,23 @@ class OBSConnector:
 
         Returns: None
         """
-        # Initialize states
-        Logger.inst().debug("Initializing states")
-        self._initialize_states()
+        with self._lock:
+            # Initialize states
+            Logger.inst().debug("Initializing states")
+            self._initialize_states()
 
-        # Initialize inputs
-        Logger.inst().debug("Initializing inputs")
-        self._initialize_inputs()
+            # Initialize inputs
+            Logger.inst().debug("Initializing inputs")
+            self._initialize_inputs()
 
-        # Scenes
-        Logger.inst().debug("Initializing scenes")
-        self._initialize_scenes()
+            # Scenes
+            Logger.inst().debug("Initializing scenes")
+            self._initialize_scenes()
 
-        # Initialize callbacks
-        Logger.inst().debug("Initializing callbacks")
-        self._initialize_callbacks()
+            # Initialize callbacks
+            Logger.inst().debug("Initializing callbacks")
+            self._initialize_callbacks()
+        # end lock
     # end _initialize
 
     # Initialize inputs
@@ -653,26 +697,28 @@ class OBSConnector:
         """
         Update scene list
         """
-        # Scenes
-        scene_list = self.client.get_scene_list().scenes
+        with self._lock:
+            # Scenes
+            scene_list = self.client.get_scene_list().scenes
 
-        # Create each object
-        for scene in scene_list:
-            # Scene info
-            scene_name = scene['sceneName']
-            scene_index = scene['sceneIndex']
+            # Create each object
+            for scene in scene_list:
+                # Scene info
+                scene_name = scene['sceneName']
+                scene_index = scene['sceneIndex']
 
-            # Create if not in
-            if scene_name not in self._scenes:
-                self._scenes[scene_name] = OBSScene(
-                    index=scene_index,
-                    name=scene_name
-                )
-            else:
-                self._scenes[scene_name].index = scene_index
-                self._scenes[scene_name].name = scene_name
-            # end if
-        # end for
+                # Create if not in
+                if scene_name not in self._scenes:
+                    self._scenes[scene_name] = OBSScene(
+                        index=scene_index,
+                        name=scene_name
+                    )
+                else:
+                    self._scenes[scene_name].index = scene_index
+                    self._scenes[scene_name].name = scene_name
+                # end if
+            # end for
+        # end lock
     # end _update_scene_list
 
     # Update current scene
@@ -680,53 +726,55 @@ class OBSConnector:
         """
         Update current scene
         """
-        # Current scene
-        current_program_scene_name = self.client.get_current_program_scene().current_program_scene_name
+        with self._lock:
+            # Current scene
+            current_program_scene_name = self.client.get_current_program_scene().current_program_scene_name
 
-        # Log
-        Logger.inst().debug(f"Current program scene: {current_program_scene_name}")
+            # Log
+            Logger.inst().debug(f"Current program scene: {current_program_scene_name}")
 
-        # Current preview scene
-        try:
-            current_preview_scene_name = self.client.get_current_preview_scene().current_preview_scene_name
-        except obs_error.OBSSDKRequestError as e:
-            if e.code == 506:
-                Logger.inst().warning("Studio Mode is not activated in OBS.")
-            else:
-                Logger.inst().warning(f"Get current preview scene failed: code={e.code}")
+            # Current preview scene
+            try:
+                current_preview_scene_name = self.client.get_current_preview_scene().current_preview_scene_name
+            except obs_error.OBSSDKRequestError as e:
+                if e.code == 506:
+                    Logger.inst().warning("Studio Mode is not activated in OBS.")
+                else:
+                    Logger.inst().warning(f"Get current preview scene failed: code={e.code}")
+                # end if
+                current_preview_scene_name = None
+            except Exception as e:
+                Logger.inst().warning(f"Unexpected error while getting preview scene: {e}")
+                current_preview_scene_name = None
+            # end try
+
+            # Log
+            Logger.inst().debug(f"Current preview scene: {current_preview_scene_name}")
+
+            # Update program scene
+            if current_program_scene_name in self._scenes:
+                # Set current scene
+                self.current_program_scene = self._scenes[current_program_scene_name]
+                self._scenes[current_program_scene_name].set_current(True)
+                for scene_name, scene in self._scenes.items():
+                    if scene_name != current_program_scene_name:
+                        scene.set_current(False)
+                    # end if
+                # end for
             # end if
-            current_preview_scene_name = None
-        except Exception as e:
-            Logger.inst().warning(f"Unexpected error while getting preview scene: {e}")
-            current_preview_scene_name = None
-        # end try
 
-        # Log
-        Logger.inst().debug(f"Current preview scene: {current_preview_scene_name}")
-
-        # Update program scene
-        if current_program_scene_name in self._scenes:
-            # Set current scene
-            self.current_program_scene = self._scenes[current_program_scene_name]
-            self._scenes[current_program_scene_name].set_current(True)
-            for scene_name, scene in self._scenes.items():
-                if scene_name != current_program_scene_name:
-                    scene.set_current(False)
-                # end if
-            # end for
-        # end if
-
-        # Update preview scene
-        if current_preview_scene_name is not None and current_preview_scene_name in self._scenes:
-            # Set current scene
-            self.current_preview_scene = self._scenes[current_preview_scene_name]
-            self._scenes[current_preview_scene_name].set_current_preview(True)
-            for scene_name, scene in self._scenes.items():
-                if scene_name != current_preview_scene_name:
-                    scene.set_current_preview(False)
-                # end if
-            # end for
-        # end if
+            # Update preview scene
+            if current_preview_scene_name is not None and current_preview_scene_name in self._scenes:
+                # Set current scene
+                self.current_preview_scene = self._scenes[current_preview_scene_name]
+                self._scenes[current_preview_scene_name].set_current_preview(True)
+                for scene_name, scene in self._scenes.items():
+                    if scene_name != current_preview_scene_name:
+                        scene.set_current_preview(False)
+                    # end if
+                # end for
+            # end if
+        # end with lock
     # end _update_current_scene
 
     # Trigger callbacks

@@ -25,6 +25,7 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 # Imports
 import os
 from typing import Optional
+import threading
 
 from PIL import Image, ImageDraw, ImageFont
 from StreamDeck.ImageHelpers import PILHelper
@@ -133,6 +134,9 @@ class DeckRenderer:
         # Empty icon
         self.am = context.asset_manager
         self.empty_icon = self.am.get_icon("empty")
+
+        # Locks
+        self._render_lock = threading.RLock()
     # end __init__
 
     # region PROPERTIES
@@ -170,24 +174,26 @@ class DeckRenderer:
         """
         Clear the Stream Deck.
         """
-        # Clear the deck
-        for key_index in range(self.deck.key_count()):
-            Logger.inst().debug(f"RENDER_KEY {key_index} {self.empty_icon}")
-            self.render_key(
-                key_index,
-                KeyDisplay(
-                    text="",
-                    icon=self.empty_icon,
-                    font=None,
-                    margin_top=0,
-                    margin_bottom=0,
-                    margin_left=0,
-                    margin_right=0,
-                    text_anchor="ms",
-                    text_color="white"
+        with self._render_lock:
+            # Clear the deck
+            for key_index in range(self.deck.key_count()):
+                Logger.inst().debug(f"RENDER_KEY {key_index} {self.empty_icon}")
+                self.render_key(
+                    key_index,
+                    KeyDisplay(
+                        text="",
+                        icon=self.empty_icon,
+                        font=None,
+                        margin_top=0,
+                        margin_bottom=0,
+                        margin_left=0,
+                        margin_right=0,
+                        text_anchor="ms",
+                        text_color="white"
+                    )
                 )
-            )
-        # end for
+            # end for
+        # end render lock
     # end clear_deck
 
     # Update a key on the Stream Deck
@@ -199,7 +205,9 @@ class DeckRenderer:
         - key_index (int): Index of the key to update.
         - image (PIL.Image): Image to display on the key.
         """
-        self.deck.set_key_image(key_index, image)
+        with self._render_lock:
+            self.deck.set_key_image(key_index, image)
+        # end render lock
     # end update
 
     # Set a key on the Stream Deck
@@ -240,43 +248,45 @@ class DeckRenderer:
         :param key_display: KeyDisplay object containing the text and icon to display.
         :type key_display: KeyDisplay
         """
-        # Create key image
-        image = PILHelper.create_scaled_key_image(
-            self.deck,
-            key_display.icon,
-            margins=[
-                key_display.margin_top,
-                key_display.margin_right,
-                key_display.margin_bottom,
-                key_display.margin_left
-            ]
-        )
-
-        # Default font
-        font = self.am.get_font("default") if key_display.font is None else key_display.font
-
-        if len(key_display.text) > 0:
-            # Drawing canvas
-            draw = ImageDraw.Draw(image)
-
-            # Draw text on the image
-            draw.text(
-                xy=(image.width / 2, image.height - 5),
-                text=key_display.text,
-                font=font,
-                anchor=key_display.text_anchor,
-                fill=key_display.text_color
+        with self._render_lock:
+            # Create key image
+            image = PILHelper.create_scaled_key_image(
+                self.deck,
+                key_display.icon,
+                margins=[
+                    key_display.margin_top,
+                    key_display.margin_right,
+                    key_display.margin_bottom,
+                    key_display.margin_left
+                ]
             )
-        # end if
 
-        # Transform image to native key format
-        image = PILHelper.to_native_key_format(self.deck, image)
+            # Default font
+            font = self.am.get_font("default") if key_display.font is None else key_display.font
 
-        # Log
-        Logger.inst().debug(f"Deck {self.deck.id()} Key {key_index} = {key_display.text} with icon {key_display.icon}")
+            if len(key_display.text) > 0:
+                # Drawing canvas
+                draw = ImageDraw.Draw(image)
 
-        # Update key
-        self.deck.set_key_image(key_index, image)
+                # Draw text on the image
+                draw.text(
+                    xy=(image.width / 2, image.height - 5),
+                    text=key_display.text,
+                    font=font,
+                    anchor=key_display.text_anchor,
+                    fill=key_display.text_color
+                )
+            # end if
+
+            # Transform image to native key format
+            image = PILHelper.to_native_key_format(self.deck, image)
+
+            # Log
+            Logger.inst().debug(f"Deck {self.deck.id()} Key {key_index} = {key_display.text} with icon {key_display.icon}")
+
+            # Update key
+            self.deck.set_key_image(key_index, image)
+        # end render lock
     # end render_key
 
     # endregion PUBLIC METHODS
