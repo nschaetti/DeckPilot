@@ -26,15 +26,15 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 from typing import Any, Optional
 import obsws_python as obs
 import obsws_python.error as obs_error
-import websocket._exceptions as ws_exceptions
 from deckpilot.elements import Button, Item
 from deckpilot.utils import Logger
 from deckpilot.core import KeyDisplay
+from deckpilot.comm import event_bus
 
 
-class OBSSceneButton(Button):
+class OBSInputButton(Button):
     """
-    Button that switches to a specific OBS scene.
+    Button to activate/deactivate an OBS input.
     """
 
     # Constructor
@@ -43,11 +43,12 @@ class OBSSceneButton(Button):
             name,
             path,
             parent,
-            scene_name: str,
-            icon_scene_inactive: str,
-            icon_scene_active: str,
-            icon_scene_error: str = "default_inactive",
+            input_name: str,
+            icon_input_inactive: str,
+            icon_input_active: str,
+            icon_input_error: str = "default_inactive",
             icon_pressed: str = "default_pressed",
+            is_special_input: bool = False,
             font_family: str = "Roboto-Bold",
             font_size: int = 180,
             font_color: str = "white",
@@ -67,12 +68,18 @@ class OBSSceneButton(Button):
         :type path: Path
         :param parent: Parent panel.
         :type parent: PanelNode
-        :param scene_name: Name of the OBS scene to switch to.
-        :type scene_name: str
-        :param icon_scene_inactive: Icon for the inactive state.
-        :type icon_scene_inactive: str
-        :param icon_scene_active: Icon for the active state.
-        :type icon_scene_active: str
+        :param input_name: Name of the OBS input to control.
+        :type input_name: str
+        :param icon_input_inactive: Icon for the inactive state.
+        :type icon_input_inactive: str
+        :param icon_input_active: Icon for the active state.
+        :type icon_input_active: str
+        :param icon_input_error: Icon for the error state.
+        :type icon_input_error: str
+        :param icon_pressed: Icon for the pressed state.
+        :type icon_pressed: str
+        :param is_special_input: Flag to indicate if the input is special.
+        :type is_special_input: bool
         :param font_family: Font family for the countdown display.
         :type font_family: str
         :param font_size: Font size for the countdown display.
@@ -96,18 +103,13 @@ class OBSSceneButton(Button):
         Logger.inst().info(f"{self.__class__.__name__} {name} created.")
         self.font = self.am.get_font(font_family, font_size)
         self.font_color = font_color
-
-        # Assert that parent is a OBSPanel object
-        #if not parent.__class__.__name__ == "OBSPanel":
-        #    raise TypeError(f"Parent must be an OBSPanel object, got {type(parent)}")
-        # end if
         self.parent = parent
 
         # Icons
-        self.icon_scene_inactive = self.am.get_icon(icon_scene_inactive)
+        self.icon_input_inactive = self.am.get_icon(icon_input_inactive)
         self.icon_pressed = self.am.get_icon(icon_pressed)
-        self.icon_scene_active = self.am.get_icon(icon_scene_active)
-        self.icon_scene_error = self.am.get_icon(icon_scene_error)
+        self.icon_input_active = self.am.get_icon(icon_input_active)
+        self.icon_input_error = self.am.get_icon(icon_input_error)
         self.margin_top = margin_top
         self.margin_right = margin_right
         self.margin_bottom = margin_bottom
@@ -115,9 +117,10 @@ class OBSSceneButton(Button):
         self.icon_x_offset = icon_x_offset
         self.icon_y_offset = icon_y_offset
 
-        # Scene active ?
-        self.scene_name = scene_name
-        self.scene_active = None
+        # Input settings
+        self.input_name = input_name
+        self.input_active = None
+        self.is_special_input = is_special_input
     # end __init__
 
     # region PRIVATE
@@ -126,16 +129,31 @@ class OBSSceneButton(Button):
         """
         Get the icon for the button.
 
-        :return: The icon for the button.
+        Returns:
+            KeyDisplay: The icon to display.
         """
-        if self.scene_active:
-            return self.icon_scene_active
-        elif self.scene_active is not None:
-            return self.icon_scene_inactive
+        if self.input_active:
+            return self.icon_input_active
+        elif self.input_active is not None:
+            return self.icon_input_inactive
         else:
-            return self.icon_scene_error
+            return self.icon_input_error
         # end if
     # end _get_icon
+
+    def _get_input_name(self) -> str:
+        """
+        Get the input name.
+
+        Returns:
+            str: The input name.
+        """
+        if self.is_special_input:
+            return self.parent.get_special_input(self.input_name)
+        else:
+            return self.input_name
+        # end if
+    # end _get_input_name
 
     # endregion PRIVATE
 
@@ -153,30 +171,26 @@ class OBSSceneButton(Button):
         Logger.inst().event("OBSSceneButton", self.name, "dispatch", data=data)
 
         # Initialisation or update scene
-        if data['event'] == "on_obs_connected" or data['event'] == "on_current_program_scene_changed":
+        if data['event'] == "on_input_mute_state_changed" and data['data'].input_name == self._get_input_name():
+            # Input mute state
+            input_muted = data['data'].input_muted
+            self.input_active = not input_muted
+            Logger.inst().debug(f"Input \"{self.input_name}\" is muted={self.input_active}")
+            self.parent.refresh_me(self)
+        elif data['event'] == "on_obs_connected":
+            # Get the current input state
             try:
-                # Get the current scene
-                obs_scene = self.parent.get_scene(self.scene_name)
-
-                # Check if the scene is active
-                self.scene_active = obs_scene.current
-
-                # Debug log
-                Logger.inst().debug(f"Scene \"{self.scene_name}\" is active={self.scene_active} ({obs_scene})")
-
-                # Update the icon
+                obs_input_name = self._get_input_name()
+                input_muted = self.parent.get_input_mute_state(obs_input_name).input_muted
+                self.input_active = not input_muted
+                Logger.inst().debug(f"Input \"{self.input_name}\" is muted={self.input_active}")
                 self.parent.refresh_me(self)
-            except ws_exceptions.WebSocketConnectionClosedException as e:
-                Logger.inst().error(f"Failed to get scene \"{self.scene_name}\" ({e}), connection closed")
-                self.scene_active = None
             except Exception as e:
-                Logger.inst().error(f"Failed to get scene \"{self.scene_name}\" ({e})")
-                self.scene_active = None
+                Logger.inst().error(f"Failed to get input mute state: {self.input_name} → {e}")
             # end try
         elif data['event'] == "on_obs_disconnected":
-            # Reset the scene active state
-            self.scene_active = None
-            Logger.inst().debug(f"Scene \"{self.scene_name}\" is active={self.scene_active}")
+            self.input_active = None
+            Logger.inst().debug(f"Input \"{self.input_name}\" is disconnected")
             self.parent.refresh_me(self)
         # end if
     # end on_dispatch_received
@@ -264,17 +278,14 @@ class OBSSceneButton(Button):
         """
         Logger.inst().info(f"{self.__class__.__name__} {self.name} released.")
 
-        # Change scene
-        try:
-            self.parent.change_scene(self.scene_name)
-            Logger.inst().info(f"Changed scene to: {self.scene_name}")
-        except ws_exceptions.WebSocketConnectionClosedException as e:
-            Logger.inst().error(f"Failed to change scene: {self.scene_name} → {e}, connection closed")
-            self.scene_active = None
-        except Exception as e:
-            Logger.inst().error(f"Failed to change scene: {self.scene_name} → {e}")
-            self.scene_active = None
-        # end try
+        event_bus.publish(
+            "obs.input.toggle",
+            {
+                "input_name": self.input_name,
+                "is_special_input": self.is_special_input,
+                "source": self.name,
+            }
+        )
 
         # KeyDisplay
         key_display = KeyDisplay(
@@ -305,4 +316,3 @@ class OBSSceneButton(Button):
     # endregion EVENTS
 
 # end OBSSceneButton
-

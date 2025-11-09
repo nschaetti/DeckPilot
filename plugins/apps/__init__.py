@@ -1,0 +1,1 @@
+"""Apps DeckPilot plugin."""

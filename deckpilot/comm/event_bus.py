@@ -1,35 +1,17 @@
+"""deckpilot.comm.event_bus module for DeckPilot.
 """
- ██████╗ ███████╗ ██████╗██╗  ██╗██████╗ ██╗      ██████╗ ██╗████████╗
-██╔════╝ ██╔════╝██╔════╝██║ ███║██╔══██╗██║     ██╔═══██╗██║╚══██╔══╝
-██║  ███╗█████╗  ██║     █████║  ███████║██║     ██║   ██║██║   ██║
-██║   ██║██╔══╝  ██║     ██╔═███║██╔════╝██║     ██║   ██║██║   ██║
-╚██████╔╝███████╗╚██████╗██║ ═██║██║     ███████╗╚██████╔╝██║   ██║
- ╚═════╝ ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝     ╚══════╝ ╚═════╝ ╚═╝   ╚═╝
 
-DeckPilot - A customizable interface for your Stream Deck.
-Licensed under the GNU General Public License v3.0
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
-"""
 
 # Imports
 from collections import defaultdict
-from typing import Callable, Any, Dict, Optional
+from typing import Callable, Any, Dict, Optional, Union
 from enum import Enum
 from deckpilot.utils import Logger
 
 
 class EventType(str, Enum):
+    """All events that can be published through the DeckPilot event bus."""
+
     # System
     EXIT = "exit"
     INITIALIZED = "initialized"
@@ -51,9 +33,9 @@ class EventType(str, Enum):
     PANEL_NEXT_PAGE = "panel/page/next"
     PANEL_PREVIOUS_PAGE = "panel/page/previous"
     PANEL_PARENT = "panel/parent"
-# end EventType
 
 
+# end class EventType
 class UserCallback:
     """
     Class to hold user callback data.
@@ -64,19 +46,19 @@ class UserCallback:
             user: object,
             callback: Callable[[Any], None]
     ):
-        """
-        Constructor for the UserCallback class.
-
-        :param user: User object associated with the callback.
-        :param callback: Callback function to call when the event is published.
+        """Constructor for the UserCallback class.
+        
+        Args:
+            user (object): User object associated with the callback.
+            callback (Callable[[Any], None]): Callback function to call when the event is published.
         """
         self.user = user
         self.callback = callback
-    # end __init__
-
-# end UserCallback
 
 
+
+    # end def __init__
+# end class UserCallback
 class EventBus:
     """
     Simple event system for Pub/Sub.
@@ -95,21 +77,28 @@ class EventBus:
             cls._instance._broadcasters = list()
         # end if
         return cls._instance
-    # end __new__
 
+    # end def __new__
+
+    def _normalize_event_type(self, event_type: Union[str, EventType]) -> str:
+        """Normalize event identifiers for internal dictionaries."""
+        if isinstance(event_type, EventType):
+            return event_type.value
+        return str(event_type)
+
+    # end def _normalize_event_type
     def subscribe_broadcast(
             self,
             callback: Callable[[Any], None]
     ):
-        """
-        Subscribe a callback function to a broadcast event.
-
-        :param callback: Callback function to call when the event is published.
-        :type callback: Callable[[Any], None]
+        """Subscribe a callback function to a broadcast event.
+        
+        Args:
+            callback (Callable[[Any], None]): Callback function to call when the event is published.
         """
         self._broadcasters.append(callback)
-    # end subscribe_broadcast
 
+    # end def subscribe_broadcast
     def subscribe(
             self,
             user: object,
@@ -123,18 +112,18 @@ class EventBus:
         - event_type (str): Type of event to subscribe to.
         - callback (Callable[[Any], None]): Callback function to call when the event is published.
         """
-        self._subscribers[event_type].append(UserCallback(user, callback))
-    # end subscribe
+        event_key = self._normalize_event_type(event_type)
+        self._subscribers[event_key].append(UserCallback(user, callback))
 
+    # end def subscribe
     def broadcast(
             self,
             data: Dict[str, Any]
     ):
-        """
-        Broadcast an event to all subscribers.
-
-        :param data: Data to pass to the subscribers.
-        :type data: Dict[str, Any]
+        """Broadcast an event to all subscribers.
+        
+        Args:
+            data (Dict[str, Any]): Data to pass to the subscribers.
         """
         for callback in self._broadcasters:
             Logger.inst().debug(f"EventBus: broadcast with data {data}")
@@ -142,49 +131,45 @@ class EventBus:
                 callback(*data)
             else:
                 callback(data)
+
             # end if
         # end for
-    # end broadcast
-
+    # end def broadcast
     def publish(
             self,
             event_type: str,
             data: Any = None
     ) -> bool:
-        """
-        Publish an event and notify all subscribers.
-
-        :param event_type: Type of event to publish.
-        :type event_type: str
-        :param data: Data to pass to the subscribers.
-        :type data: Any
-        :return: True if the event was published successfully, False otherwise.
-        :rtype: bool
+        """Publish an event and notify all subscribers.
+        
+        Args:
+            event_type (str): Type of event to publish.
+            data (Any): Data to pass to the subscribers.
+        
+        Returns:
+            bool: True if the event was published successfully, False otherwise.
         """
         event_sent = False
-        if event_type in EventType:
-            if event_type in self._subscribers:
-                for uscall in self._subscribers[event_type]:
-                    if data is None:
-                        # Logger.inst().debug(f"EventBus: {event_type} published")
-                        uscall.callback()
+        event_key = self._normalize_event_type(event_type)
+        if event_key in self._subscribers:
+            for uscall in self._subscribers[event_key]:
+                if data is None:
+                    uscall.callback()
+                else:
+                    if isinstance(data, tuple):
+                        uscall.callback(*data)
                     else:
-                        # Logger.inst().debug(f"EventBus: {event_type} published with data {data}")
-                        if isinstance(data, tuple):
-                            uscall.callback(*data)
-                        else:
-                            uscall.callback(data)
-                        # end if
+                        uscall.callback(data)
                     # end if
-                    event_sent = True
-                # end for
-            # end if
+                # end if
+                event_sent = True
+            # end for
         else:
-            Logger.inst().warning(f"EventBus: {event_type} not found")
+            Logger.inst().debug(f"EventBus: {event_key} not found")
         # end if
         return event_sent
-    # end publish
 
+    # end def publish
     # Send event to a specific user for an event type
     def send_event(
             self,
@@ -192,44 +177,37 @@ class EventBus:
             event_type: str,
             data: Any = None
     ) -> Optional[Any]:
+        """Send an event to a specific user.
+        
+        Args:
+            user (object): User object to send the event to.
+            event_type (str): Type of event to send.
+            data (Any): Data to pass to the user.
+        
+        Returns:
+            Optional[Any]: The result of the callback function, if any.
         """
-        Send an event to a specific user.
-
-        :param user: User object to send the event to.
-        :type user: object
-        :param event_type: Type of event to send.
-        :type event_type: str
-        :param data: Data to pass to the user.
-        :type data: Any
-        :return: The result of the callback function, if any.
-        :rtype: Optional[Any]
-        """
-        if event_type in EventType:
-            if event_type in self._subscribers:
-                for uscall in self._subscribers[event_type]:
-                    if uscall.user == user:
-                        if data is None:
-                            Logger.inst().debugg(f"EventBus: {event_type} sent to {user}")
-                            return uscall.callback()
+        event_key = self._normalize_event_type(event_type)
+        if event_key in self._subscribers:
+            for uscall in self._subscribers[event_key]:
+                if uscall.user == user:
+                    if data is None:
+                        Logger.inst().debugg(f"EventBus: {event_key} sent to {user}")
+                        return uscall.callback()
+                    else:
+                        Logger.inst().debugg(f"EventBus: {event_key} sent to {user} with data {data}")
+                        if isinstance(data, tuple):
+                            return uscall.callback(*data)
                         else:
-                            Logger.inst().debugg(f"EventBus: {event_type} sent to {user} with data {data}")
-                            if isinstance(data, tuple):
-                                return uscall.callback(*data)
-                            else:
-                                return uscall.callback(data)
-                            # end if
+                            return uscall.callback(data)
                         # end if
                     # end if
-                # end for
-            # end if
-            else:
-                Logger.inst().debug(f"EventBus: {event_type} not found")
-            # end if
+                # end if
+            # end for
         else:
-            Logger.inst().warning(f"EventBus: {event_type} not a valid event type")
+            Logger.inst().debug(f"EventBus: {event_key} not found")
         # end if
-    # end send_event
-
+    # end def send_event
     def unsubscribe(
             self,
             user: object,
@@ -242,23 +220,15 @@ class EventBus:
         - user (object): User object to unsubscribe.
         - event_type (str): Type of event to unsubscribe from.
         """
-        if event_type in EventType:
-            if event_type in self._subscribers:
-                self._subscribers[event_type] = [
-                    uscall for uscall in self._subscribers[event_type] if uscall.user != user
-                ]
-            # end if
-            else:
-                Logger.inst().debug(f"EventBus: {event_type} not found")
-            # end if
+        event_key = self._normalize_event_type(event_type)
+        if event_key in self._subscribers:
+            self._subscribers[event_key] = [
+                uscall for uscall in self._subscribers[event_key] if uscall.user != user
+            ]
         else:
-            Logger.inst().warning(f"EventBus: {event_type} not a valid event type")
+            Logger.inst().debug(f"EventBus: {event_key} not found")
         # end if
-    # end unsubscribe
-
-# end EventBus
-
-
+    # end def unsubscribe
+# end class EventBus
 # Singleton instance of EventBus
 event_bus = EventBus()
-

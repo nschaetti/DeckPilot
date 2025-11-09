@@ -1,0 +1,1 @@
+"""Pomodoro plugin panel assets."""

@@ -34,5 +34,9 @@ setup(
     package_data={
         "deckpilot": ["icons/*.png", "assets/*.ttf", "assets/*.otf"],
     },
+    entry_points={
+        "console_scripts": [
+            "deckpilot=deckpilot.__main__:main",
+        ],
+    },
 )
-

@@ -28,6 +28,7 @@ from pathlib import Path
 from datetime import datetime
 
 from deckpilot.core import KeyDisplay
+from deckpilot.comm import event_bus
 from deckpilot.elements import Button, Panel, Item
 from deckpilot.utils import Logger
 
@@ -264,32 +265,24 @@ class OBSRecordButton(Button):
         """
         Event handler for the "on_item_released" event.
         """
-        # Start/stop recording
+        payload = {"source": self.name}
         if self.action == "record":
             if self.is_double_press():
-                self.parent.stop_recording()
+                event_bus.publish("obs.record.stop", payload)
             else:
-                if self.parent.is_recording():
-                    self.parent.pause_recording()
-                elif self.parent.is_recording_paused():
-                    self.parent.resume_recording()
+                if self.state == "active":
+                    event_bus.publish("obs.record.pause", payload)
+                elif self.state == "paused":
+                    event_bus.publish("obs.record.resume", payload)
                 else:
-                    self.parent.start_recording()
-                # end if
-
-                # Set last press time
+                    event_bus.publish("obs.record.start", payload)
                 self.set_last_press_time()
-            # end if
         elif self.action == "stream":
             if self.state == "confirm":
-                if self.parent.is_streaming():
-                    self.parent.stop_streaming()
-                else:
-                    self.parent.start_streaming()
-                # end if
+                event_bus.publish("obs.stream.toggle", payload)
+                self.state = "inactive"
             else:
                 self.state = "confirm"
-            # end if
         # end if
 
         # KeyDisplay
@@ -310,4 +303,3 @@ class OBSRecordButton(Button):
     # endregion EVENTS
 
 # end OBSRecordButton
-

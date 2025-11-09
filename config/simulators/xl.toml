@@ -1,0 +1,5 @@
+# Stream Deck XL (32 keys, 4x8)
+
+[[devices]]
+type = "xl"
+serial = "SIM-XL-001"

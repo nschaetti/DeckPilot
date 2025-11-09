@@ -19,17 +19,17 @@ margin_bottom = 0
 margin_left = 0
 margin_right = 0
 
-# Voice recording
+# End Stream
 [[items]]
-name = "obs_scene_voice_recoding"
+name = "obs_scene_end_stream"
 path = "obs_scene_button.py"
 type = "button"
 
 [items.params]
-scene_name = "Prise de son"
-icon_scene_inactive = "obs_scene_voice_recording_inactive"
-icon_scene_active = "obs_scene_voice_recording_active"
-icon_pressed = "obs_scene_voice_recording_pressed"
+scene_name = "After Stream"
+icon_scene_inactive = "obs_scene_end_stream_inactive"
+icon_scene_active = "obs_scene_end_stream_active"
+icon_pressed = "obs_scene_end_stream_pressed"
 icon_scene_error = "obs_error"
 margin_top = 0
 margin_bottom = 0
@@ -47,6 +47,23 @@ scene_name = "Capture Firefox"
 icon_scene_inactive = "obs_scene_firefox_inactive"
 icon_scene_active = "obs_scene_firefox_active"
 icon_pressed = "obs_scene_firefox_pressed"
+icon_scene_error = "obs_error"
+margin_top = 0
+margin_bottom = 0
+margin_left = 0
+margin_right = 0
+
+# Voice recording
+[[items]]
+name = "obs_scene_no_screen"
+path = "obs_scene_button.py"
+type = "button"
+
+[items.params]
+scene_name = "No screen"
+icon_scene_inactive = "obs_scene_voice_recording_inactive"
+icon_scene_active = "obs_scene_voice_recording_active"
+icon_pressed = "obs_scene_voice_recording_pressed"
 icon_scene_error = "obs_error"
 margin_top = 0
 margin_bottom = 0
@@ -81,23 +98,6 @@ scene_name = "Capture d'écran (droite)"
 icon_scene_inactive = "obs_scene_right_screen_inactive"
 icon_scene_active = "obs_scene_right_screen_active"
 icon_pressed = "obs_scene_right_screen_pressed"
-icon_scene_error = "obs_error"
-margin_top = 0
-margin_bottom = 0
-margin_left = 0
-margin_right = 0
-
-# End Stream
-[[items]]
-name = "obs_scene_end_stream"
-path = "obs_scene_button.py"
-type = "button"
-
-[items.params]
-scene_name = "After Stream"
-icon_scene_inactive = "obs_scene_end_stream_inactive"
-icon_scene_active = "obs_scene_end_stream_active"
-icon_pressed = "obs_scene_end_stream_pressed"
 icon_scene_error = "obs_error"
 margin_top = 0
 margin_bottom = 0

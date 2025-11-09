@@ -1,0 +1,40 @@
+name: apps
+version: "1.0.0"
+description: Application launcher collection for DeckPilot.
+entry_point: plugins.apps.plugin:AppsPlugin
+
+panels:
+  - id: apps-panel
+    name: Apps
+    path: panel
+    mount: root
+    params:
+      icon_inactive: apps
+      icon_pressed: apps_pressed
+      label: ""
+      margin_top: 0
+      margin_bottom: 0
+      margin_left: 0
+      margin_right: 0
+      parent_bouton_icon_inactive: parent
+      parent_bouton_icon_pressed: parent_pressed
+      parent_bouton_label: ""
+      parent_bouton_margin_top: 0
+      parent_bouton_margin_bottom: 0
+      parent_bouton_margin_left: 0
+      parent_bouton_margin_right: 0
+      next_page_bouton_icon_inactive: next_page
+      next_page_bouton_icon_pressed: next_page_pressed
+      next_page_bouton_label: ""
+      next_page_bouton_margin_top: 0
+      next_page_bouton_margin_bottom: 0
+      next_page_bouton_margin_left: 0
+      next_page_bouton_margin_right: 0
+      previous_page_bouton_icon_inactive: previous_page
+      previous_page_bouton_icon_pressed: previous_page_pressed
+      previous_page_bouton_label: ""
+      previous_page_bouton_margin_top: 0
+      previous_page_bouton_margin_bottom: 0
+      previous_page_bouton_margin_left: 0
+      previous_page_bouton_margin_right: 0
+      activated_sound: click

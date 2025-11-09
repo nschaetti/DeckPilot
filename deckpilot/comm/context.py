@@ -1,26 +1,6 @@
+"""deckpilot.comm.context module for DeckPilot.
 """
- ██████╗ ███████╗ ██████╗██╗  ██╗██████╗ ██╗      ██████╗ ██╗████████╗
-██╔════╝ ██╔════╝██╔════╝██║  ██║██╔══██╗██║     ██╔═══██╗██║╚══██╔══╝
-██║  ███╗█████╗  ██║     ███████║██║  ██║██║     ██║   ██║██║   ██║
-██║   ██║██╔══╝  ██║     ██╔══██║██║  ██║██║     ██║   ██║██║   ██║
-╚██████╔╝███████╗╚██████╗██║  ██║██████╔╝███████╗╚██████╔╝██║   ██║
- ╚═════╝ ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═════╝ ╚══════╝ ╚═════╝ ╚═╝   ╚═╝
 
-DeckPilot - A customizable interface for your Stream Deck.
-Licensed under the GNU General Public License v3.0
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
-"""
 
 # Imports
 from deckpilot.utils import Logger
@@ -44,111 +24,92 @@ class Context:
             cls._instance._objects = {}
         # end if
         return cls._instance
-    # end __new__
 
+    # end def __new__
     # region PROPERTIES
 
     @property
     def active_panel(self):
-        """
-        Get the active panel.
-
-        :return:
+        """Get the active panel.
         """
         return self.get("active_panel")
-    # end active_panel
 
+    # end def active_panel
     @property
     def config(self):
-        """
-        Get the configuration.
-
-        :return:
+        """Get the configuration.
         """
         return self._objects.get("config", None)
-    # end config
 
+    # end def config
     @property
     def deck_manager(self):
-        """
-        Get the DeckManager.
-
-        :return:
+        """Get the DeckManager.
         """
         return self.get("deck_manager")
-    # end deck_manager
 
+    # end def deck_manager
     @property
     def panel_registry(self):
-        """
-        Get the PanelRegistry.
-
-        :return:
+        """Get the PanelRegistry.
         """
         return self.get("panel_registry")
-    # end panel_registry
 
+    # end def panel_registry
     @property
     def asset_manager(self):
-        """
-        Get the AssetManager.
-
-        :return:
+        """Get the AssetManager.
         """
         return self.get("asset_manager")
-    # end asset_manager
 
+    # end def asset_manager
     # endregion PROPERTIES
 
     # region PUBLIC
 
     def set_active_panel(self, panel):
-        """
-        Set the active panel.
-
-        :param panel:
-        :return:
+        """Set the active panel.
+        
+        Args:
+            panel (Any): Description.
         """
         Logger.inst().debug(f"Context: set active panel: {panel}")
         self.register("active_panel", panel)
-    # end set_active_panel
 
+    # end def set_active_panel
     def register(self, key, obj):
-        """
-        Register an object with a key.
-
-        :param key:
-        :param obj:
-        :return:
+        """Register an object with a key.
+        
+        Args:
+            key (Any): Description.
+            obj (Any): Description.
         """
         self._objects[key] = obj
-    # end register
 
+    # end def register
     def get(self, key):
-        """
-        Get an object by its key.
-
-        :param key:
-        :return:
+        """Get an object by its key.
+        
+        Args:
+            key (Any): Description.
         """
         return self._objects.get(key)
-    # end get
 
+    # end def get
     def unregister(self, key):
-        """
-        Unregister an object by its key.
-
-        :param key:
-        :return:
+        """Unregister an object by its key.
+        
+        Args:
+            key (Any): Description.
         """
         self._objects.pop(key, None)
-    # end unregister
 
+    # end def unregister
     # endregion PUBLIC
 
-# end Context
 
 
+# end class Context
 # Global registry instance
 context = Context()
 

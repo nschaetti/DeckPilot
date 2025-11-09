@@ -1,0 +1,37 @@
+name: obs
+version: "1.0.0"
+description: OBS Studio integration for DeckPilot.
+entry_point: plugins.obs.plugin:OBSPlugin
+
+panels:
+  - id: obs-main
+    name: OBS
+    path: panel
+    mount: root
+    class: plugins.obs.panel.obs_panel:OBSPanel
+    params:
+      icon_inactive: obs
+      icon_pressed: obs_pressed
+
+events:
+  - topic: initialized
+    handler: handle_initialized
+  - topic: obs.scene.activate
+    handler: handle_scene_activation
+  - topic: obs.record.start
+    handler: handle_record_start
+  - topic: obs.record.stop
+    handler: handle_record_stop
+  - topic: obs.record.toggle
+    handler: handle_record_toggle
+  - topic: obs.record.pause
+    handler: handle_record_pause
+  - topic: obs.record.resume
+    handler: handle_record_resume
+  - topic: obs.stream.toggle
+    handler: handle_stream_toggle
+  - topic: obs.input.toggle
+    handler: handle_input_toggle
+
+config:
+  scenes: []

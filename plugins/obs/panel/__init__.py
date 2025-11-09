@@ -25,12 +25,14 @@ For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
 
 # Imports
 from .obs_scene_button import OBSSceneButton
-from .obs_connector import OBSConnector
+from .obs_panel import OBSConnector, OBSPanel
 
 # ALL
 __all__ = [
     # OBS Scene Button
     "OBSSceneButton",
     # OBS Connector
-    "OBSConnector"
+    "OBSConnector",
+    # OBS Panel
+    "OBSPanel",
 ]

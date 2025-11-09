@@ -35,7 +35,7 @@ from datetime import datetime, timedelta
 from deckpilot.elements import Panel, Item
 from deckpilot.utils import Logger
 from deckpilot.core import KeyDisplay, DeckRenderer
-from deckpilot.comm import context
+from deckpilot.comm import context, event_bus
 
 
 # Event names as Enum
@@ -1055,7 +1055,8 @@ class OBSConnector:
 
         # Attrs: input_name, muted
         Logger.inst().info(f"Input mute state changed: input_muted={input_muted}, input_name={input_name}, input_uuid={input_uuid}")
-        print(dir(data))
+        event_bus.publish("obs.input.state", self._serialize_event_payload(data))
+
         # Callbacks
         self._trigger_callbacks(
             OBSEvent.INPUT_MUTE_STATE_CHANGED,
@@ -1289,6 +1290,12 @@ class OBSPanel(Panel):
         self._connect_obs()
     # end __init__
 
+    def reconnect(self):
+        """Public helper to trigger a connection attempt."""
+        self._connect_obs()
+
+    # end reconnect
+
     # region PUBLIC
 
     # Is OBS recording
@@ -1504,6 +1511,12 @@ class OBSPanel(Panel):
         self.obs_connector.toggle_input_mute(input_name)
     # end toggle_input_mute
 
+    def toggle_input(self, input_name: str):
+        """Alias kept for backwards compatibility with the plugin manager."""
+        self.toggle_input_mute(input_name)
+
+    # end toggle_input
+
     # Get scene list
     def get_scene_list(
             self
@@ -1623,6 +1636,18 @@ class OBSPanel(Panel):
             # end if
         # end for
     # end _show_debug_info
+    @staticmethod
+    def _serialize_event_payload(data):
+        """Convert OBS SDK event payloads to JSON-friendly dictionaries."""
+        if hasattr(data, "__dict__"):
+            return {
+                key: value
+                for key, value in data.__dict__.items()
+                if not key.startswith("_")
+            }
+        return data
+
+    # end _serialize_event_payload
 
     # Connect to OBS
     def _connect_obs(self):
@@ -1646,6 +1671,7 @@ class OBSPanel(Panel):
 
                 # Dispatch init
                 self.dispatch(source=self, data={'event': 'on_obs_connected', 'data': None})
+                event_bus.publish("obs.connection.ready", {"panel": self.name})
             except Exception as e:
                 self.last_connection_attempt = datetime.now()
                 Logger.inst().error(f"Failed to connect to OBS: {e}")
@@ -1709,6 +1735,7 @@ class OBSPanel(Panel):
                     Logger.inst().error(f"OBS connection closed: {e}")
                     self.obs_connected = False
                     self.dispatch(source=self, data={'event': 'on_obs_disconnected'})
+                    event_bus.publish("obs.connection.closed", {"panel": self.name})
                 # end if
             # end if
         # end if
@@ -1777,6 +1804,7 @@ class OBSPanel(Panel):
         # Log
         Logger.inst().event(self.__class__.__name__, self.name, "on_current_program_scene_changed", data=data)
         self.dispatch(source=self, data={'event': 'on_current_program_scene_changed', 'data':data})
+        event_bus.publish("obs.scene.program", self._serialize_event_payload(data))
     # end on_current_program_scene_changed
 
     # On current preview scene changed event handler
@@ -1790,6 +1818,7 @@ class OBSPanel(Panel):
         # Log
         Logger.inst().event(self.__class__.__name__, self.name, "on_current_preview_scene_changed", data=data)
         self.dispatch(source=self, data={'event': 'on_current_preview_scene_changed', 'data':data})
+        event_bus.publish("obs.scene.preview", self._serialize_event_payload(data))
     # end on_current_preview_scene_changed
 
     # On stream state changed event handler
@@ -1803,6 +1832,7 @@ class OBSPanel(Panel):
         # Log
         Logger.inst().event(self.__class__.__name__, self.name, "on_stream_state_changed", data=data)
         self.dispatch(source=self, data={'event': 'on_stream_state_changed', 'data':data})
+        event_bus.publish("obs.stream.state", self._serialize_event_payload(data))
     # end on_stream_state_changed
 
     # On record state changed event handler
@@ -1816,6 +1846,7 @@ class OBSPanel(Panel):
         # Log
         Logger.inst().event(self.__class__.__name__, self.name, "on_record_state_changed", data=data)
         self.dispatch(source=self, data={'event': 'on_record_state_changed', 'data':data})
+        event_bus.publish("obs.record.state", self._serialize_event_payload(data))
     # end on_record_state_changed
 
     # On input active state changed event handler
@@ -1860,4 +1891,3 @@ class OBSPanel(Panel):
     # endregion EVENTS
 
 # end OBSPanel
-

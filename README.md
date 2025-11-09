@@ -30,9 +30,32 @@ python main.py
 ```
 
 ## Usage
-1. Launch **DeckPilot**
-2. Configure your buttons and scripts via the settings panel
-3. Navigate between categories and multiple windows for efficient access
+
+```sh
+# Launch DeckPilot with your configuration
+python -m deckpilot --config config/config.toml
+```
+
+- `--root` lets you point to a different panel directory (defaults to `config/root`).
+- `--log-level` controls verbosity (`DEBUG`, `INFO`, etc.).
+
+### Simulator mode
+
+DeckPilot ships with a full software simulator so you can build layouts
+without hardware:
+
+```sh
+python -m deckpilot \
+  --config config/config.toml \
+  --use-simulator \
+  --show-simulator
+```
+
+- `--use-simulator` swaps the hardware driver for a virtual Stream Deck.
+- `--show-simulator` opens an interactive window representing the deck.
+- `--simulator-config` points to a TOML file under `config/simulators`
+  (Original, Mini, XL, or Virtual Pad). The default is the 3 × 5 Stream Deck
+  Original profile.
 
 ## Contributing
 Contributions are welcome! Feel free to submit issues, feature requests, or pull requests.

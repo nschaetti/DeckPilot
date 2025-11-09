@@ -1,26 +1,6 @@
+"""deckpilot.core.asset_manager module for DeckPilot.
 """
-███████╗ ███████╗ ██████╗██╗  ██╗██████╗ ██╗      ██████╗ ██╗████████╗
-██╔══███ ██╔════╝██╔════╝██║  ██║██╔══██╗██║     ██╔═══██╗██║╚══██╔══╝
-██║  ███╗█████╗  ██║     ███████║██║  ██║██║     ██║   ██║██║   ██║
-██║  ███║██╔══╝  ██║     ██╔══██║██║  ██║██║     ██║   ██║██║   ██║
-██████╔╝╝███████╗╚██████╗██║  ██║██████╔╝███████╗╚██████╔╝██║   ██║
- ╚═════  ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═════╝ ╚══════╝ ╚═════╝ ╚═╝   ╚═╝
 
-DeckPilot - A customizable interface for your Stream Deck.
-Licensed under the GNU General Public License v3.0
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
-"""
 
 # Imports
 import os
@@ -45,15 +25,12 @@ class AssetManager:
             fonts_directory: str = None,
             sounds_directory: str = None,
     ):
-        """
-        Constructor for the AssetManager class.
-
-        :param icons_directory: The directory where icons are stored.
-        :type icons_directory: str
-        :param fonts_directory: The directory where fonts are stored.
-        :type fonts_directory: str
-        :param sounds_directory: The directory where sounds are stored.
-        :type sounds_directory: str
+        """Constructor for the AssetManager class.
+        
+        Args:
+            icons_directory (str): The directory where icons are stored.
+            fonts_directory (str): The directory where fonts are stored.
+            sounds_directory (str): The directory where sounds are stored.
         """
         # Initialize the dictionaries to hold icons and fonts
         self.icons_directory = icons_directory
@@ -74,17 +51,16 @@ class AssetManager:
         # Load sound assets
         self.load_package_sounds()
         self.load_sounds(path=self.sounds_directory)
-    # end __init__
 
+    # end def __init__
     # region PUBLIC
 
     # Play a sound
     def play_sound(self, sound_name: str):
-        """
-        Play a sound by its name (non-blocking).
-
-        :param sound_name: The name of the sound.
-        :type sound_name: str
+        """Play a sound by its name (non-blocking).
+        
+        Args:
+            sound_name (str): The name of the sound.
         """
         # Get the sound
         sound = self.sounds.get(sound_name)
@@ -95,45 +71,44 @@ class AssetManager:
                 threading.Thread(target=playsound, args=(sound_path,), daemon=True).start()
             # end if
         # end if
-    # end play_sound
 
+    # end def play_sound
     # Get sound
     def get_sound(self, sound_name: str) -> str:
-        """
-        Get a sound by its name.
-
-        :param sound_name: The name of the sound.
-        :type sound_name: str
-        :return: The path to the sound file.
-        :rtype: str
+        """Get a sound by its name.
+        
+        Args:
+            sound_name (str): The name of the sound.
+        
+        Returns:
+            str: The path to the sound file.
         """
         return self.sounds.get(sound_name)[0]
-    # end get_sound
 
+    # end def get_sound
     # Get icon
     def get_icon(self, icon_name: str) -> Image:
-        """
-        Get an icon by its name.
-
-        :param icon_name: The name of the icon.
-        :type icon_name: str
-        :return: The icon image.
-        :rtype: PIL.Image
+        """Get an icon by its name.
+        
+        Args:
+            icon_name (str): The name of the icon.
+        
+        Returns:
+            PIL.Image: The icon image.
         """
         return self.icons.get(icon_name)
-    # end get_icon
 
+    # end def get_icon
     # Get font
     def get_font(self, font_name: str, size: int = 14) -> ImageFont:
-        """
-        Get a font by its name.
-
-        :param font_name: The name of the font.
-        :type font_name: str
-        :param size: The size of the font.
-        :type size: int
-        :return: The font object.
-        :rtype: Font
+        """Get a font by its name.
+        
+        Args:
+            font_name (str): The name of the font.
+            size (int): The size of the font.
+        
+        Returns:
+            Font: The font object.
         """
         font_file = self.fonts.get(font_name)[0]
         font_type = self.fonts.get(font_name)[1]
@@ -141,16 +116,15 @@ class AssetManager:
             return load_font(font_file, size)
         elif font_type == "package":
             return load_package_font(font_file, size)
-        # end if
-    # end get_font
 
+        # end if
+    # end def get_font
     # Load fonts
     def load_fonts(self, path: str):
-        """
-        Load fonts from the font directory.
-
-        :param path: The path to the font directory.
-        :type path: str
+        """Load fonts from the font directory.
+        
+        Args:
+            path (str): The path to the font directory.
         """
         font_files = [entry for entry in os.listdir(path) if entry.endswith(('.ttf', '.otf'))]
 
@@ -166,16 +140,15 @@ class AssetManager:
             # Load the font
             # self.fonts[font_name] = load_font(font_path, size)
             self.fonts[font_name] = (font_path, "config")
-        # end for
-    # end load_fonts
 
+        # end for
+    # end def load_fonts
     # Load sounds
     def load_sounds(self, path: str):
-        """
-        Load sounds from the sound directory.
-
-        :param path: The path to the sound directory.
-        :type path: str
+        """Load sounds from the sound directory.
+        
+        Args:
+            path (str): The path to the sound directory.
         """
         sound_files = [entry for entry in os.listdir(path) if entry.endswith(('.wav', '.mp3'))]
 
@@ -190,9 +163,9 @@ class AssetManager:
 
             # Load the sound
             self.sounds[sound_name] = (sound_path, "config")
-        # end for
-    # end load_sounds
 
+        # end for
+    # end def load_sounds
     # Load package sounds
     def load_package_sounds(self):
         """
@@ -211,9 +184,9 @@ class AssetManager:
 
             # Load the sound
             self.sounds[sound_name] = (str(entry), "package")
-        # end for
-    # end load_package_sounds
 
+        # end for
+    # end def load_package_sounds
     # Load package fonts
     def load_package_fonts(self):
         """
@@ -233,16 +206,15 @@ class AssetManager:
             # Load the font
             self.fonts[font_name] = (file, "package")
             # self.fonts[font_name] = load_package_font(file, size)
-        # end for
-    # end load_package_fonts
 
+        # end for
+    # end def load_package_fonts
     # Load icons from the icon directory
     def load_icons(self, path: str):
-        """
-        Load icons from the icon directory.
-
-        :param path: The path to the icon directory.
-        :type path: str
+        """Load icons from the icon directory.
+        
+        Args:
+            path (str): The path to the icon directory.
         """
         icon_files = [entry for entry in os.listdir(path) if entry.endswith(('.png', '.svg'))]
 
@@ -257,9 +229,9 @@ class AssetManager:
 
             # Load the icon
             self.icons[icon_name] = load_image(icon_path)
-        # end for
-    # end load_icons
 
+        # end for
+    # end def load_icons
     # Load package icons
     def load_package_icons(self):
         """
@@ -278,10 +250,10 @@ class AssetManager:
 
             # Load the icon
             self.icons[icon_name] = load_package_icon(file)
-        # end for
-    # end load_package_icons
 
+        # end for
+    # end def load_package_icons
     # endregion PUBLIC
 
-# end AssetManager
 
+# end class AssetManager

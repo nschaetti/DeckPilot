@@ -1,26 +1,6 @@
+"""deckpilot.core.deck_renderer module for DeckPilot.
 """
- ██████╗ ███████╗ ██████╗██╗  ██╗██████╗ ██╗      ██████╗ ██╗████████╗
-██╔════╝ ██╔════╝██╔════╝██║  ██║██╔══██╗██║     ██╔═══██╗██║╚══██╔══╝
-██║  ███╗█████╗  ██║     ███████║██║  ██║██║     ██║   ██║██║   ██║
-██║   ██║██╔══╝  ██║     ██╔══██║██║  ██║██║     ██║   ██║██║   ██║
-╚██████╔╝███████╗╚██████╗██║  ██║██████╔╝███████╗╚██████╔╝██║   ██║
- ╚═════╝ ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═════╝ ╚══════╝ ╚═════╝ ╚═╝   ╚═╝
 
-DeckPilot - A customizable interface for your Stream Deck.
-Licensed under the GNU General Public License v3.0
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
-"""
 
 # Imports
 import os
@@ -54,27 +34,18 @@ class KeyDisplay:
             text_anchor: str = "ms",
             text_color: str = "white",
     ):
-        """
-        Constructor for the KeyDisplay class.
-
-        :param text: Text to display on the key.
-        :type text: str
-        :param icon: Icon to display on the key.
-        :type icon: Image
-        :param margin_top: Top margin for the icon.
-        :type margin_top: int
-        :param margin_bottom: Bottom margin for the icon.
-        :type margin_bottom: int
-        :param margin_left: Left margin for the icon.
-        :type margin_left: int
-        :param margin_right: Right margin for the icon.
-        :type margin_right: int
-        :param font: Font to use for the text.
-        :type font: ImageFont
-        :param text_anchor: Text anchor position.
-        :type text_anchor: str
-        :param text_color: Color of the text.
-        :type text_color: str
+        """Constructor for the KeyDisplay class.
+        
+        Args:
+            text (str): Text to display on the key.
+            icon (Image): Icon to display on the key.
+            font (ImageFont): Font to use for the text.
+            margin_top (int): Top margin for the icon.
+            margin_bottom (int): Bottom margin for the icon.
+            margin_left (int): Left margin for the icon.
+            margin_right (int): Right margin for the icon.
+            text_anchor (str): Text anchor position.
+            text_color (str): Color of the text.
         """
         self.text = text
         self.icon = icon
@@ -85,8 +56,8 @@ class KeyDisplay:
         self.font = font
         self.text_anchor = text_anchor
         self.text_color = text_color
-    # end __init__
 
+    # end def __init__
     # region OVERRIDE
 
     def __repr__(self):
@@ -98,8 +69,8 @@ class KeyDisplay:
             f"margins=({self.margin_top}, {self.margin_right}, {self.margin_bottom}, "
             f"{self.margin_left}), text_anchor={self.text_anchor}, text_color={self.text_color})"
         )
-    # end __repr__
 
+    # end def __repr__
     def __str__(self):
         """
         String representation of the KeyDisplay object.
@@ -109,13 +80,14 @@ class KeyDisplay:
             f"margins=({self.margin_top}, {self.margin_right}, {self.margin_bottom}, {self.margin_left}), "
             f"text_anchor={self.text_anchor}, text_color={self.text_color})"
         )
-    # end __str__
-
-# end KeyDisplay
 
 
+
+    # end def __str__
+# end class KeyDisplay
 # Manage the rendering of the Stream Deck
 class DeckRenderer:
+    """Render text, icons, and panels on the connected Stream Deck device."""
 
     # Constructor
     def __init__(
@@ -137,8 +109,8 @@ class DeckRenderer:
 
         # Locks
         self._render_lock = threading.RLock()
-    # end __init__
 
+    # end def __init__
     # region PROPERTIES
 
     @property
@@ -147,16 +119,16 @@ class DeckRenderer:
         Get the Stream Deck manager.
         """
         return self._deck_manager
-    # end deck_manager
 
+    # end def deck_manager
     @property
     def deck(self):
         """
         Get the Stream Deck device.
         """
         return self._deck_manager.deck
-    # end deck
 
+    # end def deck
     # endregion PROPERTIES
 
     # region PUBLIC METHODS
@@ -167,8 +139,8 @@ class DeckRenderer:
         Clear the Stream Deck.
         """
         self.deck.reset()
-    # end reset_deck
 
+    # end def reset_deck
     # Clear the Stream Deck
     def clear_deck(self):
         """
@@ -192,10 +164,10 @@ class DeckRenderer:
                         text_color="white"
                     )
                 )
-            # end for
-        # end render lock
-    # end clear_deck
 
+            # end for
+        # end with
+    # end def clear_deck
     # Update a key on the Stream Deck
     def update_key(self, key_index, image):
         """
@@ -207,9 +179,9 @@ class DeckRenderer:
         """
         with self._render_lock:
             self.deck.set_key_image(key_index, image)
-        # end render lock
-    # end update
 
+        # end with
+    # end def update_key
     # Set a key on the Stream Deck
     def set_key(self, key_index, image):
         """
@@ -220,8 +192,8 @@ class DeckRenderer:
         - image (PIL.Image): Image to display on the key.
         """
         self.update_key(key_index, image)
-    # end set_key
 
+    # end def set_key
     # Set image key on the Stream Deck
     def set_image_key(self, key_index, image):
         """
@@ -232,21 +204,19 @@ class DeckRenderer:
         - image (PIL.Image): Image to display on the key.
         """
         self.update_key(key_index, image)
-    # end set_image_key
 
+    # end def set_image_key
     # Render an icon on the Stream Deck
     def render_key(
             self,
             key_index: int,
             key_display: KeyDisplay
     ):
-        """
-        Render an icon on the Stream Deck.
-
-        :param key_index: Index of the key to update.
-        :type key_index: int
-        :param key_display: KeyDisplay object containing the text and icon to display.
-        :type key_display: KeyDisplay
+        """Render an icon on the Stream Deck.
+        
+        Args:
+            key_index (int): Index of the key to update.
+            key_display (KeyDisplay): KeyDisplay object containing the text and icon to display.
         """
         with self._render_lock:
             # Create key image
@@ -276,8 +246,8 @@ class DeckRenderer:
                     anchor=key_display.text_anchor,
                     fill=key_display.text_color
                 )
-            # end if
 
+            # end if
             # Transform image to native key format
             image = PILHelper.to_native_key_format(self.deck, image)
 
@@ -286,9 +256,9 @@ class DeckRenderer:
 
             # Update key
             self.deck.set_key_image(key_index, image)
-        # end render lock
-    # end render_key
 
+        # end with
+    # end def render_key
     # endregion PUBLIC METHODS
 
-# end DeckRenderer
+# end class DeckRenderer

@@ -1,0 +1,5 @@
+# Stream Deck Mini (6 keys, 2x3)
+
+[[devices]]
+type = "mini"
+serial = "SIM-MINI-001"

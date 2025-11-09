@@ -1,26 +1,6 @@
+"""deckpilot.elements.panel_nodes module for DeckPilot.
 """
- ██████╗ ███████╗ ██████╗██╗  ██╗██████╗ ██╗      ██████╗ ██╗████████╗
-██╔════╝ ██╔════╝██╔════╝██║  ██║██╔══██╗██║     ██╔═══██╗██║╚══██╔══╝
-██║  ███╗█████╗  ██║     ███████║██║  ██║██║     ██║   ██║██║   ██║
-██║   ██║██╔══╝  ██║     ██╔══██║██║  ██║██║     ██║   ██║██║   ██║
-╚██████╔╝███████╗╚██████╗██║  ██║██████╔╝███████╗╚██████╔╝██║   ██║
- ╚═════╝ ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═════╝ ╚══════╝ ╚═════╝ ╚═╝   ╚═╝
 
-DeckPilot - A customizable interface for your Stream Deck.
-Licensed under the GNU General Public License v3.0
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-For a copy of the GNU GPLv3, see <https://www.gnu.org/licenses/>.
-"""
 
 # Imports
 import abc
@@ -57,15 +37,12 @@ class Item(abc.ABC):
             path: Optional[Path] = None,
             parent: Optional['Panel'] = None
     ):
-        """
-        Constructor for the Item class.
-
-        :param name: Name of the item.
-        :type name: str
-        :param path: Path to the item file.
-        :type path: Path
-        :param parent: Parent panel.
-        :type parent: PanelNode
+        """Constructor for the Item class.
+        
+        Args:
+            name (str): Name of the item.
+            path (Path): Path to the item file.
+            parent (PanelNode): Parent panel.
         """
         self.name = name
         self.path = path
@@ -82,8 +59,8 @@ class Item(abc.ABC):
         # Icons
         self.icon_inactive = self.am.get_icon("default")
         self.icon_active = self.am.get_icon("default_pressed")
-    # end __init__
 
+    # end def __init__
     # region PROPERTIES
 
     # endregion PROPERTIES
@@ -96,16 +73,16 @@ class Item(abc.ABC):
         String representation of the item.
         """
         return f"{self.__class__.__name__}({self.name})"
-    # end __str__
 
+    # end def __str__
     # String representation
     def __repr__(self):
         """
         String representation of the item.
         """
         return f"{self.__class__.__name__}({self.name})"
-    # end __repr__
 
+    # end def __repr__
     # endregion OVERRIDE
 
     # region EVENTS
@@ -113,33 +90,30 @@ class Item(abc.ABC):
     # Receive data from dispatching
     @abc.abstractmethod
     def on_dispatch_received(self, source: 'Item', data: dict):
-        """
-        Dispatch data to the item.
-
-        :param source: Source item.
-        :type source: Item
-        :param data: Data to dispatch.
-        :type data: dict
+        """Dispatch data to the item.
+        
+        Args:
+            source (Item): Source item.
+            data (dict): Data to dispatch.
         """
         # Log
         Logger.inst().event(self.__class__.__name__, self.name, "on_dispatch_received")
-    # end on_dispatch_received
 
+    # end def on_dispatch_received
     # On item rendered
     @abc.abstractmethod
     def on_item_rendered(self) -> Optional[KeyDisplay]:
-        """
-        Event handler for the "item_rendered" event.
-
-        :return: KeyDisplay instance.
-        :rtype: KeyDisplay
+        """Event handler for the "item_rendered" event.
+        
+        Returns:
+            KeyDisplay: KeyDisplay instance.
         """
         return KeyDisplay(
             text=self.name,
             icon=self.icon_inactive,
         )
-    # end on_item_rendered
 
+    # end def on_item_rendered
     # On item pressed
     @abc.abstractmethod
     def on_item_pressed(self, key_index)-> Optional[KeyDisplay]:
@@ -150,8 +124,8 @@ class Item(abc.ABC):
             text=self.name,
             icon=self.icon_active,
         )
-    # end on_item_pressed
 
+    # end def on_item_pressed
     # On item released
     @abc.abstractmethod
     def on_item_released(self, key_index)-> Optional[KeyDisplay]:
@@ -162,22 +136,20 @@ class Item(abc.ABC):
             text=self.name,
             icon=self.icon_inactive,
         )
-    # end on_item_released
 
+    # end def on_item_released
     # On periodic tick
     @abc.abstractmethod
     def on_periodic_tick(self, time_i: int, time_count: int) -> Optional[KeyDisplay]:
-        """
-        Event handler for the "periodic" event.
-
-        :param time_i: Time index.
-        :type time_i: int
-        :param time_count: Time count.
-        :type time_count: int
+        """Event handler for the "periodic" event.
+        
+        Args:
+            time_i (int): Time index.
+            time_count (int): Time count.
         """
         ...
-    # end on_periodic_tick
 
+    # end def on_periodic_tick
     # On internal periodic tick
     def on_internal_periodic_tick(self, time_i: int, time_count: int):
         """
@@ -185,13 +157,13 @@ class Item(abc.ABC):
         """
         # Log
         Logger.inst().event(self.__class__.__name__, self.name, "on_internal_periodic_tick")
-    # end on_internal_periodic_tick
 
+    # end def on_internal_periodic_tick
     # endregion EVENTS
 
-# end Item
 
 
+# end class Item
 # Button
 class Button(Item):
     """
@@ -205,15 +177,12 @@ class Button(Item):
             path: Optional[Path] = None,
             parent: Optional['Panel'] = None
     ):
-        """
-        Constructor for the Button class.
-
-        :param name: Name of the button.
-        :type name: str
-        :param path: Path to the button file.
-        :type path: Path
-        :param parent: Parent panel.
-        :type parent: PanelNode
+        """Constructor for the Button class.
+        
+        Args:
+            name (str): Name of the button.
+            path (Path): Path to the button file.
+            parent (PanelNode): Parent panel.
         """
         # Call parent constructor
         super().__init__(
@@ -224,8 +193,8 @@ class Button(Item):
 
         # Pressed
         self._pressed = False
-    # end __init__
 
+    # end def __init__
     # region PROPERTIES
 
     @property
@@ -234,26 +203,24 @@ class Button(Item):
         Get the pressed state of the button.
         """
         return self._pressed
-    # end pressed
 
+    # end def pressed
     # endregion PROPERTIES
 
     # region EVENTS
 
     # Receive data from dispatching
     def on_dispatch_received(self, source: 'Item', data: dict):
-        """
-        Dispatch data to the item.
-
-        :param source: Source item.
-        :type source: Item
-        :param data: Data to dispatch.
-        :type data: dict
+        """Dispatch data to the item.
+        
+        Args:
+            source (Item): Source item.
+            data (dict): Data to dispatch.
         """
         # Log
         Logger.inst().event(self.__class__.__name__, self.name, "on_dispatch_received")
-    # end on_dispatch_received
 
+    # end def on_dispatch_received
     def on_item_rendered(self) -> Optional[KeyDisplay]:
         """
         Render button
@@ -266,8 +233,8 @@ class Button(Item):
             text=self.name,
             icon=self.icon_inactive,
         )
-    # end on_item_rendered
 
+    # end def on_item_rendered
     def on_item_pressed(self, key_index) -> Optional[KeyDisplay]:
         """
         Event handler for the "on_item_pressed" event.
@@ -284,8 +251,8 @@ class Button(Item):
             text=self.name,
             icon=icon,
         )
-    # end on_item_pressed
 
+    # end def on_item_pressed
     def on_item_released(self, key_index) -> Optional[KeyDisplay]:
         """
         Event handler for the "on_item_released" event.
@@ -301,22 +268,20 @@ class Button(Item):
             text=self.name,
             icon=self.icon_inactive,
         )
-    # end on_item_released
 
+    # end def on_item_released
     def on_periodic_tick(self, time_i: int, time_count: int) -> Optional[KeyDisplay]:
-        """
-        Event handler for the "periodic" event.
-
-        :param time_i: Time index.
-        :type time_i: int
-        :param time_count: Time count.
-        :type time_count: int
+        """Event handler for the "periodic" event.
+        
+        Args:
+            time_i (int): Time index.
+            time_count (int): Time count.
         """
         # Log
         # Logger.inst().info(f"[blue bold]{self.__class__.__name__}[/]({self.name})::on_periodic_tick")
         return None
-    # end on_periodic_tick
 
+    # end def on_periodic_tick
     # On internal periodic tick
     def on_internal_periodic_tick(self, time_i: int, time_count: int):
         """
@@ -324,13 +289,13 @@ class Button(Item):
         """
         # Log
         Logger.inst().event(self.__class__.__name__, self.name, "on_internal_periodic_tick")
-    # end on_internal_periodic_tick
 
+    # end def on_internal_periodic_tick
     # endregion EVENTS
 
-# end Button
 
 
+# end class Button
 # A special button for the parent panel
 class ParentButton(Button):
     """
@@ -350,13 +315,18 @@ class ParentButton(Button):
             margin_bottom: Optional[int] = None,
             margin_left: Optional[int] = None
     ):
-        """
-        Constructor for the ParentButton class.
-
-        :param name: Name of the button.
-        :type name: str
-        :param parent: Parent panel.
-        :type parent: PanelNode
+        """Constructor for the ParentButton class.
+        
+        Args:
+            name (str): Name of the button.
+            parent (PanelNode): Parent panel.
+            label (Optional[str]): Description.
+            icon_inactive (str): Description.
+            icon_pressed (str): Description.
+            margin_top (Optional[int]): Description.
+            margin_right (Optional[int]): Description.
+            margin_bottom (Optional[int]): Description.
+            margin_left (Optional[int]): Description.
         """
         super().__init__(name=name, parent=parent)
         self.icon_inactive = self.am.get_icon(icon_inactive)
@@ -366,8 +336,8 @@ class ParentButton(Button):
         self.margin_right = margin_right
         self.margin_bottom = margin_bottom
         self.margin_left = margin_left
-    # end __init__
 
+    # end def __init__
     # region EVENTS
 
     def on_item_released(self, key_index):
@@ -383,8 +353,8 @@ class ParentButton(Button):
         # Return None because we don't want to change the icon
         # otherwise it would overwrite new icon
         return None
-    # end on_item_released
 
+    # end def on_item_released
     def on_item_rendered(self) -> Optional[KeyDisplay]:
         """
         Render button
@@ -401,24 +371,25 @@ class ParentButton(Button):
         # Add margins if given
         if self.margin_top is not None:
             key_display.margin_top = self.margin_top
-        # end if
 
+        # end if
         if self.margin_right is not None:
             key_display.margin_right = self.margin_right
-        # end if
 
+        # end if
         if self.margin_bottom is not None:
             key_display.margin_bottom = self.margin_bottom
-        # end if
 
+        # end if
         if self.margin_left is not None:
             key_display.margin_left = self.margin_left
+        # end if
         # # end if
 
         # Return icon
         return key_display
-    # end on_item_rendered
 
+    # end def on_item_rendered
     def on_item_pressed(self, key_index) -> Optional[KeyDisplay]:
         """
         Event handler for the "on_item_pressed" event.
@@ -439,29 +410,30 @@ class ParentButton(Button):
         # Add margins if given
         if self.margin_top is not None:
             key_display.margin_top = self.margin_top
-        # end if
 
+        # end if
         if self.margin_right is not None:
             key_display.margin_right = self.margin_right
-        # end if
 
+        # end if
         if self.margin_bottom is not None:
             key_display.margin_bottom = self.margin_bottom
-        # end if
 
+        # end if
         if self.margin_left is not None:
             key_display.margin_left = self.margin_left
+        # end if
         # # end if
 
         # Get the icon
         return key_display
-    # end on_item_pressed
 
+    # end def on_item_pressed
     # endregion EVENTS
 
-# end ParentButton
 
 
+# end class ParentButton
 # A special button for next page
 class NextPageButton(Button):
     """
@@ -481,27 +453,18 @@ class NextPageButton(Button):
             margin_bottom: Optional[int] = None,
             margin_left: Optional[int] = None
     ):
-        """
-        Constructor for the NextPageButton class.
-
-        :param name: Name of the button.
-        :type name: str
-        :param parent: Parent panel.
-        :type parent: PanelNode
-        :param icon_inactive: Icon for the inactive state.
-        :type icon_inactive: str
-        :param icon_pressed: Icon for the active state.
-        :type icon_pressed: str
-        :param margin_top: Top margin.
-        :type margin_top: int
-        :param margin_right: Right margin.
-        :type margin_right: int
-        :param margin_right: int
-        :type margin_right: int
-        :param margin_bottom: Bottom margin.
-        :type margin_bottom: int
-        :param margin_left: Left margin.
-        :type margin_left: int
+        """Constructor for the NextPageButton class.
+        
+        Args:
+            name (str): Name of the button.
+            parent (PanelNode): Parent panel.
+            label (Optional[str]): Description.
+            icon_inactive (str): Icon for the inactive state.
+            icon_pressed (str): Icon for the active state.
+            margin_top (int): Top margin.
+            margin_right (int): int
+            margin_bottom (int): Bottom margin.
+            margin_left (int): Left margin.
         """
         super().__init__(name=name, parent=parent)
         self.icon_inactive = self.am.get_icon(icon_inactive)
@@ -511,8 +474,8 @@ class NextPageButton(Button):
         self.margin_right = margin_right
         self.margin_bottom = margin_bottom
         self.margin_left = margin_left
-    # end __init__
 
+    # end def __init__
     # region EVENTS
 
     def on_item_rendered(self) -> Optional[KeyDisplay]:
@@ -531,24 +494,25 @@ class NextPageButton(Button):
         # Add margins if given
         if self.margin_top is not None:
             key_display.margin_top = self.margin_top
-        # end if
 
+        # end if
         if self.margin_right is not None:
             key_display.margin_right = self.margin_right
-        # end if
 
+        # end if
         if self.margin_bottom is not None:
             key_display.margin_bottom = self.margin_bottom
-        # end if
 
+        # end if
         if self.margin_left is not None:
             key_display.margin_left = self.margin_left
+        # end if
         # # end if
 
         # Return icon
         return key_display
-    # end on_item_rendered
 
+    # end def on_item_rendered
     def on_item_released(self, key_index):
         """
         Event handler for the "on_item_released" event.
@@ -561,8 +525,8 @@ class NextPageButton(Button):
 
         # Return None because we don't want to change the icon
         return None
-    # end on_item_released
 
+    # end def on_item_released
     def on_item_pressed(self, key_index) -> Optional[KeyDisplay]:
         """
         Event handler for the "on_item_pressed" event.
@@ -583,29 +547,30 @@ class NextPageButton(Button):
         # Add margins if given
         if self.margin_top is not None:
             key_display.margin_top = self.margin_top
-        # end if
 
+        # end if
         if self.margin_right is not None:
             key_display.margin_right = self.margin_right
-        # end if
 
+        # end if
         if self.margin_bottom is not None:
             key_display.margin_bottom = self.margin_bottom
-        # end if
 
+        # end if
         if self.margin_left is not None:
             key_display.margin_left = self.margin_left
+        # end if
         # # end if
 
         # Get the icon
         return key_display
-    # end on_item_pressed
 
+    # end def on_item_pressed
     # endregion EVENTS
 
-# end NextPageButton
 
 
+# end class NextPageButton
 # A special button for previous page
 class PreviousPageButton(Button):
     """
@@ -625,13 +590,18 @@ class PreviousPageButton(Button):
             margin_bottom: Optional[int] = None,
             margin_left: Optional[int] = None
     ):
-        """
-        Constructor for the PreviousPageButton class.
-
-        :param name: Name of the button.
-        :type name: str
-        :param parent: Parent panel.
-        :type parent: PanelNode
+        """Constructor for the PreviousPageButton class.
+        
+        Args:
+            name (str): Name of the button.
+            parent (PanelNode): Parent panel.
+            label (Optional[str]): Description.
+            icon_inactive (str): Description.
+            icon_pressed (str): Description.
+            margin_top (Optional[int]): Description.
+            margin_right (Optional[int]): Description.
+            margin_bottom (Optional[int]): Description.
+            margin_left (Optional[int]): Description.
         """
         super().__init__(name=name, parent=parent)
         self.icon_inactive = self.am.get_icon(icon_inactive)
@@ -641,8 +611,8 @@ class PreviousPageButton(Button):
         self.margin_right = margin_right
         self.margin_bottom = margin_bottom
         self.margin_left = margin_left
-    # end __init__
 
+    # end def __init__
     # region EVENTS
 
     def on_item_released(self, key_index):
@@ -657,8 +627,8 @@ class PreviousPageButton(Button):
 
         # Return None because we don't want to change the icon
         return None
-    # end on_item_released
 
+    # end def on_item_released
     def on_item_pressed(self, key_index) -> Optional[KeyDisplay]:
         """
         Event handler for the "on_item_pressed" event.
@@ -679,24 +649,25 @@ class PreviousPageButton(Button):
         # Add margins if given
         if self.margin_top is not None:
             key_display.margin_top = self.margin_top
-        # end if
 
+        # end if
         if self.margin_right is not None:
             key_display.margin_right = self.margin_right
-        # end if
 
+        # end if
         if self.margin_bottom is not None:
             key_display.margin_bottom = self.margin_bottom
-        # end if
 
+        # end if
         if self.margin_left is not None:
             key_display.margin_left = self.margin_left
+        # end if
         # # end if
 
         # Get the icon
         return key_display
-    # end on_item_pressed
 
+    # end def on_item_pressed
     def on_item_rendered(self) -> Optional[KeyDisplay]:
         """
         Render button
@@ -713,29 +684,29 @@ class PreviousPageButton(Button):
         # Add margins if given
         if self.margin_top is not None:
             key_display.margin_top = self.margin_top
-        # end if
 
+        # end if
         if self.margin_right is not None:
             key_display.margin_right = self.margin_right
-        # end if
 
+        # end if
         if self.margin_bottom is not None:
             key_display.margin_bottom = self.margin_bottom
-        # end if
 
+        # end if
         if self.margin_left is not None:
             key_display.margin_left = self.margin_left
-        # end if
 
+        # end if
         # Return icon
         return key_display
-    # end on_item_rendered
 
+    # end def on_item_rendered
     # endregion EVENTS
 
-# end PreviousPageButton
 
 
+# end class PreviousPageButton
 # A page on a panel
 class PanelPage:
     """
@@ -750,49 +721,48 @@ class PanelPage:
 
         # Constructor
         def __init__(self, position: int, item: Item):
-            """
-            Constructor for the PageItem class.
-
-            :param position: Position of the item on the page.
-            :param item: Item instance.
+            """Constructor for the PageItem class.
+            
+            Args:
+                position (int): Position of the item on the page.
+                item (Item): Item instance.
             """
             self.position = position
             self.item = item
-        # end __init__
 
+        # end def __init__
         # String representation
         def __str__(self):
             """
             String representation of the PageItem.
             """
             return f"<PageItem {self.position} {self.item}>"
-        # end __str__
 
+        # end def __str__
         # String representation
         def __repr__(self):
             """
             String representation of the PageItem.
             """
             return f"<PageItem {self.position} {self.item}>"
-        # end __repr__
 
-    # end PageItem
 
+        # end def __repr__
+    # end class PageItem
     # Constructor
     def __init__(self, page_number: int):
-        """
-        Constructor for the PanelPage class.
-
-        :param page_number: Page number.
-        :type page_number: int
+        """Constructor for the PanelPage class.
+        
+        Args:
+            page_number (int): Page number.
         """
         self.capacity = 15
         self.cols = 5
         self.rows = 3
         self.page_number = page_number
         self.items = []
-    # end __init__
 
+    # end def __init__
     # region PROPERTIES
 
     @property
@@ -801,46 +771,47 @@ class PanelPage:
         Get the number of items on the page.
         """
         return len(self.items)
-    # end n_items
 
+    # end def n_items
     @property
     def space_left(self):
         """
         Get the space left on the page.
         """
         return self.capacity - len(self.items)
-    # end space_left
 
+    # end def space_left
     @property
     def is_full(self):
         """
         Check if the page is full.
         """
         return self.space_left == 0
-    # end is_full
 
+    # end def is_full
     @property
     def is_empty(self):
         """
         Check if the page is empty.
         """
         return self.space_left == self.capacity
-    # end is_empty
 
+    # end def is_empty
     # endregion PROPERTIES
 
     # region PUBLIC
 
     # Get an item at a specific position
     def get_item(self, position: int) -> Item:
-        """
-        Get an item at a specific position on the page.
-
-        :param position: Position of the item.
-        :type position: int
-        :return: Item instance.
-        :rtype: Item
+        """Get an item at a specific position on the page.
+        
         :raise ValueError: If the item is not found on the page.
+        
+        Args:
+            position (int): Position of the item.
+        
+        Returns:
+            Item: Item instance.
         """
         for item in self.items:
             if item.position == position:
@@ -848,18 +819,19 @@ class PanelPage:
             # end if
         # end for
         raise ValueError(f"Item at position {position} not found on page {self.page_number}")
-    # end get_item
 
+    # end def get_item
     # Get item position
     def get_item_position(self, item: Item) -> int:
-        """
-        Get the position of an item on the page.
-
-        :param item: Item instance.
-        :type item: Item
-        :return: Position of the item.
-        :rtype: int
+        """Get the position of an item on the page.
+        
         :raise ValueError: If the item is not found on the page.
+        
+        Args:
+            item (Item): Item instance.
+        
+        Returns:
+            int: Position of the item.
         """
         for page_item in self.items:
             if page_item.item == item:
@@ -867,61 +839,58 @@ class PanelPage:
             # end if
         # end for
         raise ValueError(f"Item {item.name} not found on page {self.page_number}")
-    # end get_item_position
 
+    # end def get_item_position
     # Get an item by 2D position
     def get_item_by_2d_position(self, x: int, y: int) -> Item:
-        """
-        Get an item by its 2D position on the page.
-
-        :param x: X position.
-        :type x: int
-        :param y: Y position.
-        :type y: int
-        :return: Item instance.
-        :rtype: Item
+        """Get an item by its 2D position on the page.
+        
+        Args:
+            x (int): X position.
+            y (int): Y position.
+        
+        Returns:
+            Item: Item instance.
         """
         index = y * self.cols + x
         return self.get_item(index)
-    # end get_item_by_2d_position
 
+    # end def get_item_by_2d_position
     # Get 2D position of an item
     def get_2d_position(self, item: Item) -> (int, int):
-        """
-        Get the 2D position of an item on the page.
-
-        :param item: Item instance.
-        :type item: Item
-        :return: Tuple of (x, y) position.
-        :rtype: tuple
+        """Get the 2D position of an item on the page.
+        
+        Args:
+            item (Item): Item instance.
+        
+        Returns:
+            tuple: Tuple of (x, y) position.
         """
         index = self.get_item_position(item)
         return index % self.cols, index // self.cols
-    # end get_2d_position
 
+    # end def get_2d_position
     # Add an item
     def push(self, item: Item):
-        """
-        Adds an item to the page.
-
-        :param item: Item instance.
-        :type item: Item
+        """Adds an item to the page.
+        
+        Args:
+            item (Item): Item instance.
         """
         if self.space_left <= 0:
             Logger.inst().error(f"Page {self.page_number} is full, cannot add item {item.name}")
             raise ValueError(f"Page {self.page_number} is full, cannot add item {item.name}")
         else:
             self.items.append(PanelPage.PageItem(len(self.items), item))
-        # end if
-    # end push
 
+        # end if
+    # end def push
     # Remove an item
     def pull(self, item: Item):
-        """
-        Removes an item from the page.
-
-        :param item: Item instance.
-        :type item: Item
+        """Removes an item from the page.
+        
+        Args:
+            item (Item): Item instance.
         """
         if item.name in self.items:
             del self.items[item.name]
@@ -929,9 +898,9 @@ class PanelPage:
         else:
             Logger.inst().error(f"Item {item.name} not found on page {self.page_number}")
             raise ValueError(f"Item {item.name} not found on page {self.page_number}")
-        # end if
-    # end pull
 
+        # end if
+    # end def pull
     # endregion PUBLIC
 
     # region PRIVATE
@@ -943,9 +912,9 @@ class PanelPage:
         """
         for i, item in enumerate(self.items.values()):
             item.position = i
-        # end for
-    # end _recompute_positions
 
+        # end for
+    # end def _recompute_positions
     # endregion PRIVATE
 
     # region MAGIC_METHODS
@@ -956,40 +925,62 @@ class PanelPage:
         String representation of the page.
         """
         return f"<Page {self.page_number} ({len(self.items)} items) {self.items}>"
-    # end __str__
 
+    # end def __str__
     # String representation
     def __repr__(self):
         """
         String representation of the page.
         """
         return f"<Page {self.page_number} ({len(self.items)} items) {self.items}>"
-    # end __repr__
 
+    # end def __repr__
     # Iterator
     def __iter__(self):
-        return iter(self.items)
-    # end __iter__
+        """Iterate over items stored on the page.
 
+        Returns:
+            Iterator: Iterator over page items.
+        """
+        return iter(self.items)
+
+    # end def __iter__
     # Contains
     def __contains__(self, item):
-        return item in self.items
-    # end __contains__
+        """Check whether an item exists on the page.
 
+        Args:
+            item (str): Item key to verify.
+
+        Returns:
+            bool: True if the item exists, otherwise False.
+        """
+        return item in self.items
+
+    # end def __contains__
     # Get item
     def __getitem__(self, index):
+        """Retrieve an item by index.
+
+        Args:
+            index (int): Zero-based page index.
+
+        Returns:
+            Any: The retrieved page item.
+        """
         return self.items[index]
-    # end __getitem__
 
+    # end def __getitem__
     def __len__(self):
+        """Return the number of items contained on the page."""
         return len(self.items)
-    # end __len__
 
+    # end def __len__
     # endregion MAGIC_METHODS
 
-# end PanelPage
 
 
+# end class PanelPage
 # Panel
 class Panel(Item):
     """
@@ -1035,77 +1026,43 @@ class Panel(Item):
             previous_page_bouton_margin_left: Optional[int] = None,
             activated_sound: Optional[str] = None,
     ):
-        """
-        Constructor for the PanelNode class.
-
-        :param name: Name of the panel.
-        :type name: str
-        :param path: Path to the panel directory.
-        :type path: Path
-        :param renderer: Deck renderer instance.
-        :type renderer: DeckRenderer
-        :param parent: Parent panel.
-        :type parent: PanelNode
-        :param active: Active state.
-        :type active: bool
-        :param label: Label for the panel.
-        :type label: str
-        :param icon_inactive: Icon for the inactive state.
-        :type icon_inactive: str
-        :param icon_pressed: Icon for the active state.
-        :type icon_pressed: str
-        :param margin_top: Top margin.
-        :type margin_top: int
-        :param margin_right: Right margin.
-        :type margin_right: int
-        :param margin_bottom: Bottom margin.
-        :type margin_bottom: int
-        :param margin_left: Left margin.
-        :type margin_left: int
-        :param parent_bouton_icon_inactive: Icon for the parent button inactive state.
-        :type parent_bouton_icon_inactive: str
-        :param parent_bouton_icon_pressed: Icon for the parent button active state.
-        :type parent_bouton_icon_pressed: str
-        :param parent_bouton_label: Label for the parent button.
-        :type parent_bouton_label: str
-        :param parent_bouton_margin_top: Top margin for the parent button.
-        :type parent_bouton_margin_top: int
-        :param parent_bouton_margin_right: Right margin for the parent button.
-        :type parent_bouton_margin_right: int
-        :param parent_bouton_margin_bottom: Bottom margin for the parent button.
-        :type parent_bouton_margin_bottom: int
-        :param parent_bouton_margin_left: Left margin for the parent button.
-        :type parent_bouton_margin_left: int
-        :param next_page_bouton_icon_inactive: Icon for the next page button inactive state.
-        :type next_page_bouton_icon_inactive: str
-        :param next_page_bouton_icon_pressed: Icon for the next page button active state.
-        :type next_page_bouton_icon_pressed: str
-        :param next_page_bouton_label: Label for the next page button.
-        :type next_page_bouton_label: str
-        :param next_page_bouton_margin_top: Top margin for the next page button.
-        :type next_page_bouton_margin_top: int
-        :param next_page_bouton_margin_right: Right margin for the next page button.
-        :type next_page_bouton_margin_right: int
-        :param next_page_bouton_margin_bottom: Bottom margin for the next page button.
-        :type next_page_bouton_margin_bottom: int
-        :param next_page_bouton_margin_left: Left margin for the next page button.
-        :type next_page_bouton_margin_left: int
-        :param previous_page_bouton_icon_inactive: Icon for the previous page button inactive state.
-        :type previous_page_bouton_icon_inactive: str
-        :param previous_page_bouton_icon_pressed: Icon for the previous page button active state.
-        :type previous_page_bouton_icon_pressed: str
-        :param previous_page_bouton_label: Label for the previous page button.
-        :type previous_page_bouton_label: str
-        :param previous_page_bouton_margin_top: Top margin for the previous page button.
-        :type previous_page_bouton_margin_top: int
-        :param previous_page_bouton_margin_right: Right margin for the previous page button.
-        :type previous_page_bouton_margin_right: int
-        :param previous_page_bouton_margin_bottom: Bottom margin for the previous page button.
-        :type previous_page_bouton_margin_bottom: int
-        :param previous_page_bouton_margin_left: Left margin for the previous page button.
-        :type previous_page_bouton_margin_left: int
-        :param activated_sound: Click sound when the panel is activated.
-        :type activated_sound: str
+        """Constructor for the PanelNode class.
+        
+        Args:
+            name (str): Name of the panel.
+            path (Path): Path to the panel directory.
+            renderer (DeckRenderer): Deck renderer instance.
+            parent (PanelNode): Parent panel.
+            active (bool): Active state.
+            label (str): Label for the panel.
+            icon_inactive (str): Icon for the inactive state.
+            icon_pressed (str): Icon for the active state.
+            margin_top (int): Top margin.
+            margin_right (int): Right margin.
+            margin_bottom (int): Bottom margin.
+            margin_left (int): Left margin.
+            parent_bouton_icon_inactive (str): Icon for the parent button inactive state.
+            parent_bouton_icon_pressed (str): Icon for the parent button active state.
+            parent_bouton_label (str): Label for the parent button.
+            parent_bouton_margin_top (int): Top margin for the parent button.
+            parent_bouton_margin_right (int): Right margin for the parent button.
+            parent_bouton_margin_bottom (int): Bottom margin for the parent button.
+            parent_bouton_margin_left (int): Left margin for the parent button.
+            next_page_bouton_icon_inactive (str): Icon for the next page button inactive state.
+            next_page_bouton_icon_pressed (str): Icon for the next page button active state.
+            next_page_bouton_label (str): Label for the next page button.
+            next_page_bouton_margin_top (int): Top margin for the next page button.
+            next_page_bouton_margin_right (int): Right margin for the next page button.
+            next_page_bouton_margin_bottom (int): Bottom margin for the next page button.
+            next_page_bouton_margin_left (int): Left margin for the next page button.
+            previous_page_bouton_icon_inactive (str): Icon for the previous page button inactive state.
+            previous_page_bouton_icon_pressed (str): Icon for the previous page button active state.
+            previous_page_bouton_label (str): Label for the previous page button.
+            previous_page_bouton_margin_top (int): Top margin for the previous page button.
+            previous_page_bouton_margin_right (int): Right margin for the previous page button.
+            previous_page_bouton_margin_bottom (int): Bottom margin for the previous page button.
+            previous_page_bouton_margin_left (int): Left margin for the previous page button.
+            activated_sound (str): Click sound when the panel is activated.
         """
         super().__init__(
             name,
@@ -1176,14 +1133,14 @@ class Panel(Item):
         if (self.path / "items.toml").exists():
             # I load the items listed in the toml file
             self.load_items()
-        # end if
 
+        # end if
         # We assign a page to each item according to the number of buttons
         Logger.inst().debug(f"Panel {self.name} has {len(self.items)} items ({self.items}")
         self.pages = self._create_pages(self.items)
         Logger.inst().info(f"Assigned pages and elements: {self.pages}")
-    # end __init__
 
+    # end def __init__
     # region PROPERTIES
 
     # Active
@@ -1193,8 +1150,8 @@ class Panel(Item):
         Get the active state of the panel.
         """
         return self._active
-    # end active
 
+    # end def active
     # Set active
     @active.setter
     def active(self, value):
@@ -1203,23 +1160,23 @@ class Panel(Item):
         """
         if value:
             context.set_active_panel(self)
-        # end if
 
+        # end if
         # Newly activated panel
         if value and not self._active:
             # Send event
             event_bus.send_event(self, EventType.PANEL_ACTIVATED)
-        # end if
 
+        # end if
         # Newly deactivated panel
         if not value and self._active:
             # Send event
             event_bus.send_event(self, EventType.PANEL_DEACTIVATED)
+
         # end if
-
         self._active = value
-    # end active
 
+    # end def active
     # Number of pages
     @property
     def n_pages(self):
@@ -1227,8 +1184,8 @@ class Panel(Item):
         Get the number of pages in the panel.
         """
         return len(self.pages)
-    # end n_pages
 
+    # end def n_pages
     # Number of buttons
     @property
     def n_buttons(self):
@@ -1236,8 +1193,8 @@ class Panel(Item):
         Get the number of buttons in the panel.
         """
         return len([button for button in self.items if isinstance(button, Button)])
-    # end n_buttons
 
+    # end def n_buttons
     # Number of children
     @property
     def n_children(self):
@@ -1245,8 +1202,8 @@ class Panel(Item):
         Get the number of children in the panel.
         """
         return len([child for child in self.items if isinstance(child, Panel)])
-    # end n_children
 
+    # end def n_children
     # Total number of elements
     @property
     def n_elements(self):
@@ -1254,8 +1211,32 @@ class Panel(Item):
         Get the total number of elements in the panel.
         """
         return len(self.items)
-    # end n_elements
 
+    # end def n_elements
+    @property
+    def sub_panels(self):
+        """
+        Get child panels keyed by name (legacy compatibility helper).
+        """
+        return {
+            name: item
+            for name, item in self.items.items()
+            if isinstance(item, Panel)
+        }
+
+    # end def sub_panels
+    @property
+    def buttons(self):
+        """
+        Get child buttons keyed by name (legacy compatibility helper).
+        """
+        return {
+            name: item
+            for name, item in self.items.items()
+            if isinstance(item, Button)
+        }
+
+    # end def buttons
     # endregion PROPERTIES
 
     # region PUBLIC
@@ -1266,21 +1247,19 @@ class Panel(Item):
             source: Item,
             data: dict
     ):
-        """
-        Dispatch data across the panel's items.
-
-        :param source: Source item.
-        :type source: Item
-        :param data: Data to dispatch.
-        :type data: dict
+        """Dispatch data across the panel's items.
+        
+        Args:
+            source (Item): Source item.
+            data (dict): Data to dispatch.
         """
         for item in self.items.values():
             if isinstance(item, Item):
                 item.on_dispatch_received(source, data)
+
             # end if
         # end for
-    # end dispatch
-
+    # end def dispatch
     # Go to parent
     def go_to_parent(self):
         """
@@ -1290,9 +1269,9 @@ class Panel(Item):
             self.parent.active = True
             self.active = False
             event_bus.send_event(self.parent, EventType.PANEL_RENDERED)
-        # end if
-    # end go_to_parent
 
+        # end if
+    # end def go_to_parent
     # Next page
     def next_page(self):
         """
@@ -1303,9 +1282,9 @@ class Panel(Item):
             event_bus.send_event(self, EventType.PANEL_PAGE_CHANGED, data=(self.current_page_number, self.current_page_number + 1))
             self.current_page_number += 1
             event_bus.send_event(self, EventType.PANEL_RENDERED)
-        # end if
-    # end next_page
 
+        # end if
+    # end def next_page
     # Previous page
     def previous_page(self):
         """
@@ -1315,41 +1294,41 @@ class Panel(Item):
             event_bus.send_event(self, EventType.PANEL_PAGE_CHANGED, data=(self.current_page_number, self.current_page_number - 1))
             self.current_page_number -= 1
             event_bus.send_event(self, EventType.PANEL_RENDERED)
-        # end if
-    # end previous_page
 
+        # end if
+    # end def previous_page
     # Has a next page ?
     def has_next_page(self):
         """
         Checks if the panel has a next page.
         """
         return self.current_page_number < self.n_pages - 1
-    # end has_next_page
 
+    # end def has_next_page
     # Has a previous page ?
     def has_previous_page(self):
         """
         Checks if the panel has a previous page.
         """
         return self.current_page_number > 0
-    # end has_previous_page
 
+    # end def has_previous_page
     # Has parent ?
     def has_parent(self):
         """
         Checks if the panel has a parent.
         """
         return self.parent is not None
-    # end has_parent
 
+    # end def has_parent
     # Get the number of pages
     def get_n_pages(self):
         """
         Get the number of pages in the panel.
         """
         return len(self.pages)
-    # end get_n_pages
 
+    # end def get_n_pages
     # Get active panel
     def get_active_panel(self):
         """
@@ -1362,9 +1341,9 @@ class Panel(Item):
             return self
         else:
             return context.get("active_panel")
-        # end if
-    # end get_active_panel
 
+        # end if
+    # end def get_active_panel
     # Add button
     def add_button(
             self,
@@ -1381,29 +1360,33 @@ class Panel(Item):
             return
         # end if
         self.items[button_instance.name] = button_instance
-    # end add_button
 
+    # end def add_button
     # Add child
     def add_child(
             self,
             child_name,
             child
     ):
-        """
-        Adds a child panel to the panel.
-
-        :param child_name: Name of the child panel.
-        :type child_name: str
-        :param child: Child panel.
-        :type child: PanelNode
+        """Adds a child panel to the panel.
+        
+        Args:
+            child_name (str): Name of the child panel.
+            child (PanelNode): Child panel.
         """
         if child_name in self.items:
-            Logger.inst().warn(f"Child {child_name} already exists in {self.name}")
+            Logger.inst().warning(f"Child {child_name} already exists in {self.name}")
             return
         # end if
         self.items[child_name] = child
-    # end add_child
 
+    # end def add_child
+    def refresh_layout(self):
+        """Recompute key pages after runtime modifications."""
+        self.pages = self._create_pages(self.items)
+        Logger.inst().debug(f"{self.name}: layout refreshed with {len(self.pages)} pages.")
+
+    # end def refresh_layout
     # Load items
     def load_items(self):
         """
@@ -1425,15 +1408,14 @@ class Panel(Item):
                 # end if
             # end for
         # end if
-    # end load_items
 
+    # end def load_items
     # Load button
     def load_button(self, button_config: dict):
-        """
-        Loads a button from the panel directory.
-
-        :param button_config: Button parameters.
-        :type button_config: dict
+        """Loads a button from the panel directory.
+        
+        Args:
+            button_config (dict): Button parameters.
         """
         button_path = self.path / button_config['path']
         if button_path.exists():
@@ -1451,16 +1433,15 @@ class Panel(Item):
             # end if
         else:
             Logger.inst().error(f"Button {button_config['name']} not found in {self.name}")
-        # end if
-    # end load_button
 
+        # end if
+    # end def load_button
     # Load child
     def load_child(self, child_config: dict):
-        """
-        Loads a child panel from the panel directory.
-
-        :param child_config: Child parameters.
-        :type child_config: dict
+        """Loads a child panel from the panel directory.
+        
+        Args:
+            child_config (dict): Child parameters.
         """
         child_path = self.path / child_config['path']
         child_name = child_config['name']
@@ -1474,15 +1455,15 @@ class Panel(Item):
                 loaded_child_class = self._load_panel_class(child_class_path)
                 if loaded_child_class:
                     child_class = loaded_child_class
-                # end i
-            # end if
+                # end if
+        # end if
         # end if
 
         # If child class not loaded, then use Panel
         if child_class is None:
             child_class = Panel
-        # end if
 
+        # end if
         # If the child has a path directory which is not special (., ..), add it.
         if child_path.exists() and child_path.is_dir():
             child_params = child_config['params'] if 'params' in child_config else {}
@@ -1498,9 +1479,9 @@ class Panel(Item):
             Logger.inst().info(f"Add child: {child.name} (Parent Panel: {self.name})")
         else:
             Logger.inst().error(f"Child {child_name} not valid: {child_path}")
-        # end if
-    # end load_child
 
+        # end if
+    # end def load_child
     # Play sound
     def play_sound(self, sound_name: str):
         """
@@ -1510,14 +1491,14 @@ class Panel(Item):
             sound_name (str): Name of the sound to play.
         """
         self.am.play_sound(sound_name)
-    # end play_sound
 
+    # end def play_sound
     # Refresh me (item)
     def refresh_me(self, item: Item):
-        """
-        Refreshes the item on the panel.
-
-        :param item: Item to refresh.
+        """Refreshes the item on the panel.
+        
+        Args:
+            item (Item): Item to refresh.
         """
         # Log
         Logger.inst().debug(f"{self.__class__.__name__} ({self.name}) Refreshing item {item.name} on panel {self.name}")
@@ -1533,8 +1514,8 @@ class Panel(Item):
                 )
             # end if
         # end if
-    # end refresh_me
 
+    # end def refresh_me
     # Render panel
     def render(self):
         """
@@ -1556,10 +1537,10 @@ class Panel(Item):
                     key_index=i,
                     key_display=key_display
                 )
+
             # end if
         # end for
-    # end render
-
+    # end def render
     # Print structure
     def print_structure(self, node=None, tree=None):
         """
@@ -1574,8 +1555,8 @@ class Panel(Item):
             is_root = True
             node = self
             tree = Tree(f"[bold cyan]📂 {node.name}[/]")  # Root panel
-        # end if
 
+        # end if
         # Add buttons to the tree
         for _, item in node.items.items():
             if isinstance(item, Panel):
@@ -1584,15 +1565,15 @@ class Panel(Item):
             elif isinstance(item, Button):
                 button_text = Text(f"🔘 {item.name}", style="green")
                 tree.add(button_text)
+
             # end if
         # end for
-
         # Print the tree if we are at the root
         if is_root:
             console.print(tree)
-        # end if
-    # end print_structure
 
+        # end if
+    # end def print_structure
     # endregion PUBLIC
 
     # region PRIVATE
@@ -1607,25 +1588,25 @@ class Panel(Item):
             return 1
         # end if
         return 0
-    # end _compute_key_shift
 
+    # end def _compute_key_shift
     # Load panel class
     def _load_panel_class(self, filepath: Union[Path, str]) -> Optional[type]:
-        """
-        Load a panel class dynamically from a Python file.
-
-        :param filepath: Path to the panel file.
-        :type filepath: Union[Path, str]
-        :return: Panel class.
-        :rtype: type
+        """Load a panel class dynamically from a Python file.
+        
+        Args:
+            filepath (Union[Path, str]): Path to the panel file.
+        
+        Returns:
+            type: Panel class.
         """
         # Module name
         if isinstance(filepath, Path):
             module_name = os.path.splitext(filepath.name)[0]
         else:
             module_name = os.path.splitext(os.path.basename(filepath))[0]
-        # end if
 
+        # end if
         # Try
         try:
             spec = importlib.util.spec_from_file_location(module_name, str(filepath))
@@ -1641,28 +1622,27 @@ class Panel(Item):
             # end for
         except Exception as e:
             Logger.inst().error(f"Loading {filepath}: {e}")
-        # end try
 
         return None
-    # end _load_panel_class
 
+    # end def _load_panel_class
     # Load button class
     def _load_button_class(self, filepath: Union[Path, str]) -> Optional[type]:
-        """
-        Load a button class dynamically from a Python file.
-
-        :param filepath: Path to the button file.
-        :type filepath: Union[Path, str]
-        :return: Button class.
-        :rtype: type
+        """Load a button class dynamically from a Python file.
+        
+        Args:
+            filepath (Union[Path, str]): Path to the button file.
+        
+        Returns:
+            type: Button class.
         """
         # Module name
         if isinstance(filepath, Path):
             module_name = os.path.splitext(filepath.name)[0]
         else:
             module_name = os.path.splitext(os.path.basename(filepath))[0]
-        # end if
 
+        # end if
         # Try
         try:
             spec = importlib.util.spec_from_file_location(module_name, str(filepath))
@@ -1678,11 +1658,10 @@ class Panel(Item):
             # end for
         except Exception as e:
             Logger.inst().error(f"Loading {filepath}: {e}")
-        # end try
 
         return None
-    # end _load_button_class
 
+    # end def _load_button_class
     # Handle special keys
     def _handle_special_key_pressed(self, key_index):
         """
@@ -1703,8 +1682,8 @@ class Panel(Item):
             return True
         # end if
         return False
-    # end _handle_special_key_pressed
 
+    # end def _handle_special_key_pressed
     # Handle key change
     def _handle_key_pressed(self, key_index):
         """
@@ -1739,9 +1718,9 @@ class Panel(Item):
             # end if
         except ValueError as e:
             Logger.inst().debug(f"Panel {self.name} _handle_key_pressed key_index={key_index} out of range: {e}")
-        # end try
-    # end handle_key_pressed
+        # end def _handle_key_pressed
 
+    # end def _handle_key_pressed
     # Handle special keys
     def _handle_special_key_released(self, key_index) -> bool:
         """
@@ -1769,8 +1748,8 @@ class Panel(Item):
             return True
         # end if
         return False
-    # end _handle_special_key_released
 
+    # end def _handle_special_key_released
     # Handle key released
     def _handle_key_released(self, key_index):
         """
@@ -1808,16 +1787,18 @@ class Panel(Item):
             # end if
         except ValueError as e:
             Logger.inst().debug(f"Panel {self.name} _handle_key_released key_index={key_index} out of range: {e}")
-        # end try
-    # end _handle_key_released
+        # end def _handle_key_released
 
+    # end def _handle_key_released
     # Create pages
     def _create_pages(self, items) -> List[PanelPage]:
-        """
-        Create pages for the panel.
-
-        :param items: List of items to be assigned to pages.
-        :return: List of pages.
+        """Create pages for the panel.
+        
+        Args:
+            items (Any): List of items to be assigned to pages.
+        
+        Returns:
+            List[PanelPage]: List of pages.
         """
         # Go through the items
         page = PanelPage(page_number=0)
@@ -1838,6 +1819,7 @@ class Panel(Item):
                     margin_left=self.parent_bouton_margin_left
                 )
             )
+        # end if
         # If the page is empty, and there is a previous page, add the previous page button
 
         # Copy items
@@ -1866,8 +1848,8 @@ class Panel(Item):
                         margin_left=self.previous_page_bouton_margin_left
                     )
                 )
-            # end if
 
+            # end if
             # If it's not the last space, add the item
             # OR if it's the last space and there is only one item left, add the item
             if page.space_left > 1 or (page.space_left == 1 and len(items_to_add) == 0):
@@ -1888,18 +1870,18 @@ class Panel(Item):
                     )
                 )
                 items_to_add.insert(0, item)
-            # end if
 
+            # end if
             # If no space left, and remaining items, create a new page
             if page.is_full and len(items_to_add) != 0:
                 page = PanelPage(page_number=len(pages))
                 pages.append(page)
+
             # end if
         # end for
-
         return pages
-    # end _create_pages
 
+    # end def _create_pages
     # endregion PRIVATE
 
     # region EVENTS
@@ -1911,8 +1893,8 @@ class Panel(Item):
         """
         Logger.inst().event(self.__class__.__name__, self.name, "on_panel_rendered")
         self.render()
-    # end on_panel_rendered
 
+    # end def on_panel_rendered
     # On panel activated
     def on_panel_activated(self):
         """
@@ -1920,29 +1902,27 @@ class Panel(Item):
         """
         self.am.play_sound(self.activated_sound)
         Logger.inst().event(self.__class__.__name__, self.name, "on_panel_activated")
-    # end on_panel_activated
 
+    # end def on_panel_activated
     # On panel deactivated
     def on_panel_deactivated(self):
         """
         Event handler for the "panel_deactivated" event.
         """
         Logger.inst().event(self.__class__.__name__, self.name, "on_panel_deactivated")
-    # end on_panel_deactivated
 
+    # end def on_panel_deactivated
     # On page changed
     def on_panel_page_changed(self, old_page, new_page):
-        """
-        Event handler for the "page_changed" event.
-
-        :param old_page: Old page index.
-        :type old_page: int
-        :param new_page: New page index.
-        :type new_page: int
+        """Event handler for the "page_changed" event.
+        
+        Args:
+            old_page (int): Old page index.
+            new_page (int): New page index.
         """
         Logger.inst().event(self.__class__.__name__, self.name, "on_page_changed", old_page=old_page, new_page=new_page)
-    # end on_panel_page_changed
 
+    # end def on_panel_page_changed
     # On next page
     def on_panel_next_page(self):
         """
@@ -1950,8 +1930,8 @@ class Panel(Item):
         """
         Logger.inst().event(self.__class__.__name__, self.name, "on_next_page")
         self.next_page()
-    # end on_panel_next_page
 
+    # end def on_panel_next_page
     # On previous page
     def on_panel_previous_page(self):
         """
@@ -1959,8 +1939,8 @@ class Panel(Item):
         """
         Logger.inst().event(self.__class__.__name__, self.name, "on_previous_page")
         self.previous_page()
-    # end on_panel_previous_page
 
+    # end def on_panel_previous_page
     # On parent button pressed
     def on_panel_parent_pressed(self):
         """
@@ -1968,8 +1948,8 @@ class Panel(Item):
         """
         Logger.inst().event(self.__class__.__name__, self.name, "on_parent")
         self.go_to_parent()
-    # end on_panel_parent_pressed
 
+    # end def on_panel_parent_pressed
     # On item rendered
     def on_item_rendered(self) -> Optional[KeyDisplay]:
         """
@@ -1987,24 +1967,25 @@ class Panel(Item):
         # Add margins if given
         if self.margin_top is not None:
             key_display.margin_top = self.margin_top
-        # end if
 
+        # end if
         if self.margin_right is not None:
             key_display.margin_right = self.margin_right
-        # end if
 
+        # end if
         if self.margin_bottom is not None:
             key_display.margin_bottom = self.margin_bottom
-        # end if
 
+        # end if
         if self.margin_left is not None:
             key_display.margin_left = self.margin_left
+        # end if
         # # end if
 
         # Return icon
         return key_display
-    # end on_item_rendered
 
+    # end def on_item_rendered
     # On item pressed
     def on_item_pressed(self, key_index) -> Optional[KeyDisplay]:
         """
@@ -2025,38 +2006,37 @@ class Panel(Item):
         # Add margins if given
         if self.margin_top is not None:
             key_display.margin_top = self.margin_top
-        # end if
 
+        # end if
         if self.margin_right is not None:
             key_display.margin_right = self.margin_right
-        # end if
 
+        # end if
         if self.margin_bottom is not None:
             key_display.margin_bottom = self.margin_bottom
-        # end if
 
+        # end if
         if self.margin_left is not None:
             key_display.margin_left = self.margin_left
+        # end if
         # # end if
 
         # Return icon
         return key_display
-    # end on_item_pressed
 
+    # end def on_item_pressed
     # On dispatch received
     def on_dispatch_received(self, source: Item, data: dict):
-        """
-        Event handler for the "dispatch_received" event.
-
-        :param source: Source item.
-        :type source: Item
-        :param data: Data received.
-        :type data: dict
+        """Event handler for the "dispatch_received" event.
+        
+        Args:
+            source (Item): Source item.
+            data (dict): Data received.
         """
         # Log
         Logger.inst().event(self.__class__.__name__, self.name, "on_dispatch_received", source=source.name, data=data)
-    # end on_dispatch_received
 
+    # end def on_dispatch_received
     # On item released
     def on_item_released(self, key_index) -> Optional[KeyDisplay]:
         """
@@ -2070,15 +2050,14 @@ class Panel(Item):
 
         # Return no icon to not overwrite new panel
         return None
-    # end on_item_released
 
+    # end def on_item_released
     # On key pressed
     def on_key_pressed(self, key_index):
-        """
-        Event handler for the "key_pressed" event.
-
-        :param key_index: Index of the key that was pressed.
-        :type key_index: int
+        """Event handler for the "key_pressed" event.
+        
+        Args:
+            key_index (int): Index of the key that was pressed.
         """
         # Log
         Logger.inst().event(self.__class__.__name__, self.name, "on_key_pressed", key_index=key_index)
@@ -2086,16 +2065,15 @@ class Panel(Item):
         # If active, handle key change
         if self.active:
             self._handle_key_pressed(key_index)
-        # end if
-    # end on_key_pressed
 
+        # end if
+    # end def on_key_pressed
     # On key released
     def on_key_released(self, key_index):
-        """
-        Event handler for the "key_released" event.
-
-        :param key_index: Index of the key that was released.
-        :type key_index: int
+        """Event handler for the "key_released" event.
+        
+        Args:
+            key_index (int): Index of the key that was released.
         """
         # Log
         Logger.inst().event(self.__class__.__name__, self.name, "on_key_released", key_index=key_index)
@@ -2103,18 +2081,16 @@ class Panel(Item):
         # If active, handle key change
         if self.active:
             self._handle_key_released(key_index)
-        # end if
-    # end on_key_released
 
+        # end if
+    # end def on_key_released
     # On periodic tick
     def on_periodic_tick(self, time_i: int, time_count: int):
-        """
-        Event handler for the "periodic" event.
-
-        :param time_i: Current time index.
-        :type time_i: int
-        :param time_count: Total time count.
-        :type time_count: int
+        """Event handler for the "periodic" event.
+        
+        Args:
+            time_i (int): Current time index.
+            time_count (int): Total time count.
         """
         # Log
         Logger.inst().event(self.__class__.__name__, self.name, "on_periodic_tick")
@@ -2133,9 +2109,9 @@ class Panel(Item):
                     )
                 # end if
             # end if
-        # end for
-    # end on_periodic_tick
 
+        # end for
+    # end def on_periodic_tick
     # On internal periodic tick
     def on_internal_periodic_tick(self, time_i: int, time_count: int):
         """
@@ -2143,10 +2119,8 @@ class Panel(Item):
         """
         # Log
         Logger.inst().event(self.__class__.__name__, self.name, "on_internal_periodic_tick")
-    # end on_internal_periodic_tick
 
+    # end def on_internal_periodic_tick
     # endregion EVENTS
 
-# end Panel
-
-
+# end class Panel

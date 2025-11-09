@@ -1,0 +1,5 @@
+# Virtual Pad (45 keys, 3x15)
+
+[[devices]]
+type = "virtual_pad"
+serial = "SIM-VPAD-001"
