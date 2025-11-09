@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
+
 # deckpilot/cli.py
 from typing import Tuple, Any, Dict, Optional, Sequence
 
@@ -44,6 +45,17 @@ app = typer.Typer()
 console = Console()
 
 
+def _build_logger(level: str, filters: Sequence[str]) -> Logger:
+    """Helper to configure the shared logger with CLI validation."""
+
+    try:
+        return setup_logger(level=level, filters=list(filters) or None)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="--log-filter") from exc
+
+
+
+
 # Load configuration
 def load_config(config_path: Path) -> dict[str, Any]:
     """Load the DeckPilot configuration file.
@@ -55,9 +67,9 @@ def load_config(config_path: Path) -> dict[str, Any]:
         dict[str, Any]: Parsed configuration dictionary.
     """
     return toml.load(config_path)
-
-
 # end def load_config
+
+
 # Setup configuration
 def setup_config(
         config_path: Path,
@@ -220,6 +232,13 @@ def start(
         config: Path = typer.Option(help="Chemin vers le fichier de configuration."),
         root: Path = typer.Option("config/root", help="Chemin vers le panneau racine."),
         log_level: str = typer.Option("INFO", help="Niveau de logging : DEBUG, INFO, WARNING, ERROR"),
+        log_filter: list[str] = typer.Option(
+            (),
+            "--log-filter",
+            "-lf",
+            help="Filtre regex pour les logs (ex: 'type=INFO|WARNING,source=Panel.*'). Répéter pour combiner.",
+            show_default=False,
+        ),
         use_simulator: bool = typer.Option(False, help="Use the Stream Deck simulator instead of hardware"),
         show_simulator: bool = typer.Option(
             False,
@@ -236,6 +255,7 @@ def start(
         config (Path): Path to the DeckPilot configuration file.
         root (Path): Root panel directory.
         log_level (str): Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
+        log_filter (list[str]): Optional regex filters applied to log level/source/message.
         use_simulator (bool): Whether to use the Stream Deck simulator instead of hardware.
         show_simulator (bool): Whether to launch the visual simulator window (requires --use-simulator).
         simulator_config (Path | None): Optional simulator configuration file.
@@ -245,7 +265,7 @@ def start(
     # end if
 
     # Setup logger
-    logger = setup_logger(level=log_level)
+    logger = _build_logger(log_level, log_filter)
 
     # Load the configuration
     config, sd_serial, sd_index, sd_brightness = setup_config(
@@ -328,6 +348,13 @@ def start(
 @app.command()
 def devices(
         log_level: str = typer.Option("INFO", help="Niveau de logging : DEBUG, INFO, WARNING, ERROR"),
+        log_filter: list[str] = typer.Option(
+            (),
+            "--log-filter",
+            "-lf",
+            help="Filtre regex pour les logs (ex: 'type=INFO|WARNING,source=Panel.*'). Répéter pour combiner.",
+            show_default=False,
+        ),
         use_simulator: bool = typer.Option(False, help="Use the Stream Deck simulator instead of hardware"),
         simulator_config: Optional[Path] = typer.Option(
             None,
@@ -339,10 +366,11 @@ def devices(
 
     Args:
         log_level (str): Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
+        log_filter (list[str]): Optional regex filters applied to log level/source/message.
         use_simulator (bool): Whether to use the Stream Deck simulator instead of hardware.
         simulator_config (Path | None): Optional simulator configuration file.
     """
-    logger = setup_logger(level=log_level)
+    logger = _build_logger(log_level, log_filter)
     resolved_sim_config = _resolve_simulator_config(use_simulator, simulator_config, logger)
 
     # Get stream decks
@@ -396,6 +424,13 @@ def show(
             help="Stream Deck serial number (alternative to --index).",
         ),
         log_level: str = typer.Option("INFO", help="Niveau de logging : DEBUG, INFO, WARNING, ERROR"),
+        log_filter: list[str] = typer.Option(
+            (),
+            "--log-filter",
+            "-lf",
+            help="Filtre regex pour les logs (ex: 'type=INFO|WARNING,source=Panel.*'). Répéter pour combiner.",
+            show_default=False,
+        ),
         use_simulator: bool = typer.Option(False, help="Use the Stream Deck simulator instead of hardware"),
         simulator_config: Optional[Path] = typer.Option(
             None,
@@ -408,7 +443,7 @@ def show(
     if (index is None and serial is None) or (index is not None and serial is not None):
         raise typer.BadParameter("Provide either --index or --serial (but not both).")
 
-    logger = setup_logger(level=log_level)
+    logger = _build_logger(log_level, log_filter)
     resolved_sim_config = _resolve_simulator_config(use_simulator, simulator_config, logger)
     decks = _enumerate_stream_decks(use_simulator, resolved_sim_config)
 
