@@ -42,6 +42,28 @@ napoleon_type_aliases = {
     'KeyDisplay': 'deckpilot.core.deck_renderer.KeyDisplay',
 }
 
+autodoc_mock_imports = [
+    'StreamDeck',
+    'StreamDeck.DeviceManager',
+    'StreamDeck.ImageHelpers',
+    'PIL',
+    'PIL.Image',
+    'PIL.ImageDraw',
+    'PIL.ImageFont',
+    'PIL.ImageOps',
+    'PIL.ImageTk',
+    'playsound',
+    'cairosvg',
+    'toml',
+    'yaml',
+    'rich',
+    'rich.console',
+    'rich.table',
+    'rich.traceback',
+    'rich.text',
+    'rich.tree',
+]
+
 templates_path = ['_templates']
 exclude_patterns = []
 
