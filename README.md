@@ -38,6 +38,21 @@ python -m deckpilot --config config/config.toml
 
 - `--root` lets you point to a different panel directory (defaults to `config/root`).
 - `--log-level` controls verbosity (`DEBUG`, `INFO`, etc.).
+- `--log-filter` lets you combine regex-based filters on the log level, class source, or message. Repeat the option to OR multiple rules (e.g. `--log-filter "type=INFO|WARNING" --log-filter "source=Panel.*"`).
+
+### Advanced logging filters
+
+You can now narrow the CLI output to the signals you care about directly from the command line:
+
+```sh
+python -m deckpilot start \
+  --config config/config.toml \
+  --log-level DEBUG \
+  --log-filter "type=WARNING|ERROR" \
+  --log-filter "source=Panel.*"
+```
+
+Each `--log-filter` takes comma- or semicolon-separated `key=regex` pairs (`type`, `source`, or `message`). The above example only prints warnings/errors and, additionally, any message originating from classes whose name starts with `Panel`.
 
 ### Simulator mode
 
