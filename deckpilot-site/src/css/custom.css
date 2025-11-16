@@ -1,0 +1,154 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* You can override the default Infima variables here. */
+:root {
+    --ifm-background-color: #1E2129 !important;
+    --ifm-background-surface-color: #1E2129 !important;
+    --ifm-color-primary: #1B1B1D;
+    --ifm-color-primary-dark: #1B1B1D;
+    --ifm-color-primary-darker: #277148;
+    --ifm-color-primary-darkest: #205d3b;
+    --ifm-color-primary-light: #33925d;
+    --ifm-color-primary-lighter: #359962;
+    --ifm-color-primary-lightest: #3cad6e;
+    --ifm-code-font-size: 95%;
+    --ifm-footer-background-color: #1E2129;
+    --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+    --ifm-navbar-background-color: #8F65C4;   /* Couleur Atuin */
+    --ifm-navbar-link-color: #cdd6f4;         /* Couleur du texte */
+    --ifm-navbar-shadow: 0 1px 2px rgb(0 0 0 / 40%);
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: #1B1B1D;
+  --ifm-color-primary-dark: #1B1B1D;
+  --ifm-color-primary-darker: #1B1B1D;
+  --ifm-color-primary-darkest: #1B1B1D;
+  --ifm-color-primary-light: #29d5b0;
+  --ifm-color-primary-lighter: #32d8b4;
+  --ifm-color-primary-lightest: #4fddbf;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+
+/*
+ * Top bar
+ */
+
+/* === NAVBAR GLOBAL STYLE === */
+.navbar {
+  background-color: #1e2030  !important;  /* couleur type Atuin */
+  border-bottom: 1px dashed #ffffff;      /* petite bordure propre */
+  padding: 0.75rem 2rem;                 /* espacement vertical/horizontal */
+}
+
+/* === CENTRAL CONTAINER (comme Atuin) === */
+.navbar__inner {
+  max-width: 1200px;     /* EXACTEMENT comme Atuin */
+  margin: 0 auto;        /* centre tout le contenu */
+  width: 100%;
+  padding: 0 1rem;       /* petit espace interne */
+}
+
+/* === NAVBAR ITEMS (liens) === */
+.navbar__item,
+.navbar__link,
+.navbar__title {
+  color: #ffffff !important;     /* texte catppuccin */
+}
+
+.navbar__link,
+.navbar__brand,
+.navbar__title {
+  font-family: "JetBrains Mono", monospace !important;
+  letter-spacing: 0.5px;     /* léger espacement = vibe terminal */
+  font-weight: 500;
+  text-transform: none;      /* évite le tout-majuscules */
+}
+
+/* === NAVBAR LOGO === */
+.navbar__logo img {
+  height: 28px;                   /* taille du logo */
+}
+
+/* -------------------------------------------------------
+   HERO GRADIENT ANIMATION (DeckPilot)
+---------------------------------------------------------- */
+
+.hero-gradient {
+  position: relative;
+  padding: 20rem 2rem;
+  text-align: center;
+  overflow: hidden;
+  color: white;
+
+  /* base color fallback */
+  background: #1e1b2e;
+}
+
+/* The animated gradient layer */
+.hero-gradient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  /* ANIMATED COSMIC GRADIENT */
+  background: radial-gradient(at 20% 30%, #8F65C4 0%, #8F65C4 40%, transparent 70%),
+              radial-gradient(at 80% 20%, #ff4fd8 0%, #6b00b6 50%, transparent 70%),
+              radial-gradient(at 50% 80%, #00d9ff 0%, #0066ff 50%, transparent 70%);
+
+  background-size: 200% 200%;
+
+  animation: heroCosmos 18s ease-in-out infinite;
+
+  opacity: 1;
+  z-index: 0;
+}
+
+@keyframes heroCosmos {
+  0%   { transform: scale(1) translate(0, 0); }
+  50%  { transform: scale(1.25) translate(-5%, -5%); }
+  100% { transform: scale(1) translate(0, 0); }
+}
+
+/* Text & buttons above gradient */
+.hero-inner {
+  position: relative;
+  z-index: 10;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.hero-title {
+  font-size: 3.2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.hero-subtitle {
+  font-size: 1.4rem;
+  opacity: 0.9;
+  margin-bottom: 2rem;
+}
+
+.hero-buttons .button {
+  margin: 0 0.5rem;
+}
+
+/*
+ * Footer
+ */
+
+.footer,
+.footer--dark {
+  background-color: #111317;
+  color: #cdd6f4;
+}
+

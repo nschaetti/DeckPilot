@@ -1,19 +1,26 @@
-# Copyright (C) 2025  Nils Schaetti
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
+"""
+deckpilot.cli module for DeckPilot.
 
+# =====================================================================
+#  DeckPilot - Stream Deck Controller
+#  Copyright (C) 2025  Nils Schaetti
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =====================================================================
+
+"""
+from getpass import fallback_getpass
 # deckpilot/cli.py
 from typing import Tuple, Any, Dict, Optional, Sequence
 
@@ -45,19 +52,31 @@ app = typer.Typer()
 console = Console()
 
 
-def _build_logger(level: str, filters: Sequence[str]) -> Logger:
-    """Helper to configure the shared logger with CLI validation."""
+def _build_logger(
+        level: str,
+        filters: Sequence[str]
+) -> Logger:
+    """Helper to configure the shared logger with CLI validation.
 
+    Args:
+        level (str): Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
+        filters (list[str]): Optional regex filters applied to log level/source/message.
+
+    Returns:
+        Logger: Shared logger instance.
+    """
     try:
         return setup_logger(level=level, filters=list(filters) or None)
     except ValueError as exc:
         raise typer.BadParameter(str(exc), param_hint="--log-filter") from exc
-
-
+    # end try
+# end _build_logger
 
 
 # Load configuration
-def load_config(config_path: Path) -> dict[str, Any]:
+def load_config(
+        config_path: Path
+) -> dict[str, Any]:
     """Load the DeckPilot configuration file.
 
     Args:
@@ -132,8 +151,13 @@ def setup_asset_manager(
     )
     context.register("asset_manager", asset_manager)
     return asset_manager
+# end def setup_asset_manager
+
+
 @contextmanager
-def _deck_session(deck, logger: Logger):
+def _deck_session(
+        deck
+):
     """Ensure a deck is opened while accessing its properties."""
     opened_here = False
     try:
@@ -141,25 +165,47 @@ def _deck_session(deck, logger: Logger):
         if hasattr(deck, "is_open"):
             with suppress(Exception):
                 need_open = not deck.is_open()
+            # end with
+        # end if
         if need_open:
             deck.open()
             opened_here = True
+        # end if
         yield
     finally:
         if opened_here:
             with suppress(Exception):
                 deck.close()
+            # end with
+        # end if
+    # end try
+# end _deck_session
 
 
-def _safe_get(deck, getter, description: str, fallback, logger: Logger):
+def _safe_get(
+        deck,
+        getter,
+        description: str,
+        fallback,
+        logger: Logger
+):
     """
     Invoke a getter and fall back gracefully on failure.
+
+    Args:
+        deck (Deck): Stream Deck instance.
+        getter (Callable): Getter function.
+        description (str): Description of the getter.
+        fallback: Fallback value if getter fails.
+        logger (Logger): Rich logger used for status messages.
     """
     try:
         return getter()
     except Exception as exc:  # pragma: no cover - defensive
         logger.debug(f"Failed to read {description} for '{deck.deck_type()}': {exc}")
         return fallback
+    # end try
+# end def _safe_get
 
 
 def _resolve_simulator_config(
@@ -200,16 +246,21 @@ def _enumerate_stream_decks(
         use_simulator: bool,
         simulator_config: Optional[Path]
 ) -> Sequence[Any]:
-    """
-    Enumerate Stream Decks either from hardware or the simulator.
+    """Enumerate Stream Decks either from hardware or the simulator.
+
+    Args:
+        use_simulator (bool): Whether to use the simulator.
+        simulator_config (Path | None): Path to the simulator config.
+_enumerate_stream_decks
+    Returns:
+        List[Deck]: List of detected Stream Deck devices.
     """
     if use_simulator:
-        from deckpilot.simulator.switcher import (
+        from deckpilot.simulator import (
             DeviceManager as SimulatorDeviceManager,
             use_simulator as configure_simulator,
         )
-
-        configure_simulator(True, config_path=str(simulator_config) if simulator_config else None)
+        configure_simulator(use_sim=True, config_path=str(simulator_config) if simulator_config else None)
         manager = SimulatorDeviceManager()
     else:
         from StreamDeck.DeviceManager import DeviceManager as HardwareDeviceManager
@@ -347,12 +398,12 @@ def start(
 
 @app.command()
 def devices(
-        log_level: str = typer.Option("INFO", help="Niveau de logging : DEBUG, INFO, WARNING, ERROR"),
+        log_level: str = typer.Option("INFO", help="Logging level : DEBUG, INFO, WARNING, ERROR"),
         log_filter: list[str] = typer.Option(
             (),
             "--log-filter",
             "-lf",
-            help="Filtre regex pour les logs (ex: 'type=INFO|WARNING,source=Panel.*'). Répéter pour combiner.",
+            help="Regex filter for the logs (ex: 'type=INFO|WARNING,source=Panel.*'). Répéter pour combiner.",
             show_default=False,
         ),
         use_simulator: bool = typer.Option(False, help="Use the Stream Deck simulator instead of hardware"),
@@ -371,28 +422,43 @@ def devices(
         simulator_config (Path | None): Optional simulator configuration file.
     """
     logger = _build_logger(log_level, log_filter)
-    resolved_sim_config = _resolve_simulator_config(use_simulator, simulator_config, logger)
+    resolved_sim_config = _resolve_simulator_config(
+        use_simulator=use_simulator,
+        simulator_config=simulator_config,
+        logger=logger
+    )
 
     # Get stream decks
-    decks = _enumerate_stream_decks(use_simulator, resolved_sim_config)
+    decks = _enumerate_stream_decks(
+        use_simulator=use_simulator,
+        simulator_config=resolved_sim_config
+    )
     if not decks:
         logger.warning("No Stream Deck devices detected.")
         return
     # end if
 
+    # Create table
     table = Table(title="Detected Stream Deck devices")
-    table.add_column("Index", justify="right", style="cyan")
-    table.add_column("Type", style="bold")
-    table.add_column("Serial")
-    table.add_column("Firmware")
-    table.add_column("Visual", justify="center")
-    table.add_column("Connected", justify="center")
-    table.add_column("Keys", justify="right")
-    table.add_column("Layout", justify="center")
+    table.add_column("Index", justify="right", style="cyan")        # Index
+    table.add_column("Type", style="bold")                          # Type
+    table.add_column("Serial")                                             # Serial
+    table.add_column("Firmware")                                           # Firmware
+    table.add_column("Visual", justify="center")                    # Visual
+    table.add_column("Connected", justify="center")                 # Connected
+    table.add_column("Keys", justify="right")                       # Keys
+    table.add_column("Layout", justify="center")                    # Layout
 
+    # For each deck
     for idx, deck in enumerate(decks):
-        with _deck_session(deck, logger):
-            rows, cols = _safe_get(deck, deck.key_layout, "key layout", (0, 0), logger)
+        with _deck_session(deck):
+            rows, cols = _safe_get(
+                deck=deck,
+                getter=deck.key_layout,
+                description="key layout",
+                fallback=(0, 0),
+                logger=logger
+            )
             table.add_row(
                 str(idx),
                 deck.deck_type(),
@@ -403,6 +469,7 @@ def devices(
                 str(_safe_get(deck, deck.key_count, "key count", 0, logger)),
                 f"{rows}×{cols}",
             )
+        # end with
     # end for
 
     console.print(table)
@@ -423,12 +490,12 @@ def show(
             "-s",
             help="Stream Deck serial number (alternative to --index).",
         ),
-        log_level: str = typer.Option("INFO", help="Niveau de logging : DEBUG, INFO, WARNING, ERROR"),
+        log_level: str = typer.Option("INFO", help="Log level : DEBUG, INFO, WARNING, ERROR"),
         log_filter: list[str] = typer.Option(
             (),
             "--log-filter",
             "-lf",
-            help="Filtre regex pour les logs (ex: 'type=INFO|WARNING,source=Panel.*'). Répéter pour combiner.",
+            help="Regex filter for the log (ex: 'type=INFO|WARNING,source=Panel.*'). Répéter pour combiner.",
             show_default=False,
         ),
         use_simulator: bool = typer.Option(False, help="Use the Stream Deck simulator instead of hardware"),
@@ -439,14 +506,22 @@ def show(
 ) -> None:
     """
     Display properties of a single Stream Deck device.
+
+    Args:
+        index (int | None): Device index as shown by the `devices` command.
+        serial (str | None): Stream Deck serial number (alternative to --index).
+        log_level (str): Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
+        log_filter (list[str]): Optional regex filters applied to log level/source/message.
+        use_simulator (bool): Whether to use the Stream Deck simulator instead of hardware.
+        simulator_config (Path | None): Optional simulator configuration file.
     """
     if (index is None and serial is None) or (index is not None and serial is not None):
         raise typer.BadParameter("Provide either --index or --serial (but not both).")
+    # end if
 
     logger = _build_logger(log_level, log_filter)
     resolved_sim_config = _resolve_simulator_config(use_simulator, simulator_config, logger)
     decks = _enumerate_stream_decks(use_simulator, resolved_sim_config)
-
     if not decks:
         logger.warning("No Stream Deck devices detected.")
         raise typer.Exit(code=1)
@@ -457,20 +532,30 @@ def show(
 
     if index is not None:
         if index < 0 or index >= len(decks):
-            raise typer.BadParameter(f"Index {index} is out of range (found {len(decks)} devices).", param_hint="--index")
+            raise typer.BadParameter(
+                message=f"Index {index} is out of range (found {len(decks)} devices).",
+                param_hint="--index"
+            )
+        # end if
         target_deck = decks[index]
         target_index = index
     else:
         for idx, deck in enumerate(decks):
-            with _deck_session(deck, logger):
+            with _deck_session(deck):
                 deck_serial = _safe_get(deck, deck.get_serial_number, "serial number", None, logger)
+            # end with
             if deck_serial == serial:
                 target_deck = deck
                 target_index = idx
                 break
+            # end if
         # end for
         if target_deck is None:
-            raise typer.BadParameter(f"No Stream Deck with serial '{serial}' found.", param_hint="--serial")
+            raise typer.BadParameter(
+                message=f"No Stream Deck with serial '{serial}' found.",
+                param_hint="--serial"
+            )
+        # end if
     # end if
 
     default_key_format = {
@@ -479,7 +564,9 @@ def show(
         "flip": (False, False),
         "rotation": 0,
     }
-    with _deck_session(target_deck, logger):
+
+    # Enter deck session
+    with _deck_session(target_deck):
         layout_rows, layout_cols = _safe_get(target_deck, target_deck.key_layout, "key layout", (0, 0), logger)
         key_format = _safe_get(
             target_deck,
@@ -496,6 +583,7 @@ def show(
         connected = _safe_get(target_deck, target_deck.connected, "connection state", False, logger)
         visual = _safe_get(target_deck, target_deck.is_visual, "visual capability", False, logger)
         key_count = _safe_get(target_deck, target_deck.key_count, "key count", 0, logger)
+    # end with
 
     vendor_str = hex(vendor_id) if vendor_id is not None else "Unknown"
     product_str = hex(product_id) if product_id is not None else "Unknown"
@@ -510,6 +598,7 @@ def show(
     details.add_row("Connected", _format_bool(connected))
     details.add_row("Visual", _format_bool(visual))
     details.add_row("Key count", str(key_count))
+
     details.add_row("Key layout", f"{layout_rows}×{layout_cols}")
     details.add_row("Key image size", f"{key_format['size'][0]}×{key_format['size'][1]} px")
     details.add_row("Key image format", key_format['format'])

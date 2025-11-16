@@ -17,9 +17,8 @@ _device_manager_class = None
 _simulator_config_path = None
 
 
-def use_simulator(use_sim=True, config_path=None):
-    """
-    Set whether to use the simulator or the real hardware.
+def use_simulator(use_sim: bool = True, config_path: str = None):
+    """Set whether to use the simulator or the real hardware.
     
     Args:
         use_sim (bool): True to use the simulator, False to use the real hardware.
@@ -29,14 +28,20 @@ def use_simulator(use_sim=True, config_path=None):
     USE_SIMULATOR = use_sim
     if config_path is not None:
         _simulator_config_path = config_path
+    # end if
     _device_manager_class = None  # Reset the cache
+# end def use_simulator
 
 
 def get_simulator_config_path():
     """
     Returns the configured simulator configuration path, if any.
+
+    Returns:
+        SimulatorConfig | None: The configured simulator configuration path, if any.
     """
     return _simulator_config_path
+# end def get_simulator_config_path
 
 
 def get_device_manager_class():
@@ -47,7 +52,6 @@ def get_device_manager_class():
         class: The DeviceManager class to use.
     """
     global _device_manager_class
-    
     if _device_manager_class is None:
         if USE_SIMULATOR:
             # Import the simulator
@@ -57,8 +61,10 @@ def get_device_manager_class():
             # Import the real hardware
             from StreamDeck.DeviceManager import DeviceManager as RealDeviceManager
             _device_manager_class = RealDeviceManager
-    
+        #  end if
+    # end if
     return _device_manager_class
+# end def get_device_manager_class
 
 
 # DeviceManager class that dynamically selects the implementation
@@ -80,7 +86,9 @@ class DeviceManager:
         if USE_SIMULATOR:
             self._manager = manager_class(transport=transport, config_path=get_simulator_config_path())
         else:
-            self._manager = manager_class(transport)
+            self._manager = manager_class(transport=transport)
+        # end if
+    # end def __init__
     
     def enumerate(self):
         """
@@ -90,6 +98,7 @@ class DeviceManager:
             list: List of StreamDeck instances, one for each detected device.
         """
         return self._manager.enumerate()
+    # end def enumerate
     
     # For simulator-specific methods
     def __getattr__(self, name):
@@ -103,3 +112,6 @@ class DeviceManager:
             Any: The attribute from the underlying implementation.
         """
         return getattr(self._manager, name)
+    # end def __getattr__
+
+# end class DeviceManager
