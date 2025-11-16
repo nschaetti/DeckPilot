@@ -1,0 +1,50 @@
+site_name: DeckPilot
+site_description: "Scriptable Stream Deck workflows with DeckPilot"
+repo_url: https://github.com/nschaetti/DeckPilot
+repo_name: nschaetti/DeckPilot
+docs_dir: docs
+site_dir: site
+theme:
+  name: mkdocs
+plugins:
+  - search
+  - autorefs
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            docstring_style: sphinx
+            show_root_heading: true
+            heading_level: 2
+            separate_signature: true
+            members_order: source
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
+  - def_list
+  - tables
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Quickstart: quickstart.md
+  - User Guide:
+      - user-guide/index.md
+      - Configuration: user-guide/config.md
+      - Panels and Navigation: user-guide/panels.md
+      - Buttons: user-guide/buttons.md
+      - Automations: user-guide/automations.md
+  - Developer Guide:
+      - developer-guide/index.md
+      - Architecture: developer-guide/architecture.md
+      - Event System: developer-guide/events.md
+      - Plugins: developer-guide/plugins.md
+  - API Reference:
+      - api/index.md
+      - Package Overview: api/deckpilot.md
+      - Communication: api/deckpilot.comm.md
+      - Core: api/deckpilot.core.md
+      - Elements: api/deckpilot.elements.md
+      - Utilities: api/deckpilot.utils.md

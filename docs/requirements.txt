@@ -1,2 +1,2 @@
-sphinx>=7.2,<8.0
-sphinx-rtd-theme>=2.0,<3.0
+mkdocs>=1.6,<2.0
+mkdocstrings[python]>=0.25,<0.26
