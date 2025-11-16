@@ -1,0 +1,27 @@
+:root {
+  --md-primary-fg-color: #8f65c4;     /* Blue */
+  --md-primary-fg-color--light: #b4befe;
+  --md-primary-fg-color--dark: #8f65c4;
+
+  --md-accent-fg-color: #f5c2e7;      /* Pink */
+
+  --md-default-bg-color: #1e1e2e;     /* Mocha base */
+  --md-default-fg-color: #cdd6f4;     /* Text */
+  --md-code-bg-color: #181825;        /* Code blocks */
+}
+
+.md-container {
+    background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+
+.md-sidebar--primary {
+    width: 280px;
+}
+
+.md-header__button.md-logo img {
+    height: 32px !important;
+    width: auto !important;
+}
+
+

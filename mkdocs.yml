@@ -4,8 +4,34 @@ repo_url: https://github.com/nschaetti/DeckPilot
 repo_name: nschaetti/DeckPilot
 docs_dir: docs
 site_dir: site
+
 theme:
-  name: mkdocs
+  name: material
+  language: en
+  logo: assets/logo.png
+  favicon: assets/logo.png
+
+  # Font, colors, layout
+  palette:
+    - scheme: slate     # Dark theme
+      primary: "#c6a0f6"      # Blue
+      accent: "#7dc4e4"       # Pink
+  features:
+    - navigation.top
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.instant
+    - toc.integrate
+    - content.action.edit
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - footer.social
+
+extra_css:
+  - css/catppuccin.css
+
 plugins:
   - search
   - autorefs
@@ -19,6 +45,8 @@ plugins:
             heading_level: 2
             separate_signature: true
             members_order: source
+            show_source: true
+
 markdown_extensions:
   - admonition
   - codehilite
@@ -26,6 +54,7 @@ markdown_extensions:
       permalink: true
   - def_list
   - tables
+
 nav:
   - Home: index.md
   - Installation: installation.md
@@ -48,3 +77,16 @@ nav:
       - Core: api/deckpilot.core.md
       - Elements: api/deckpilot.elements.md
       - Utilities: api/deckpilot.utils.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/nschaetti/DeckPilot
+      name: GitHub
+    - icon: fontawesome/brands/x-twitter
+      link: https://twitter.com/Artificialis1
+      name: Twitter
+    - icon: fontawesome/brands/discord
+      link: https://discord.gg/tonserver
+      name: Discord
+
