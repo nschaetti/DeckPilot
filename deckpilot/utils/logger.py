@@ -1,24 +1,25 @@
 """
-deckpilot.utils.logger module for DeckPilot.
+ ██████╗ ███████╗ ██████╗██╗  ██╗██████╗ ██╗      ██████╗ ██╗████████╗
+██╔════╝ ██╔════╝██╔════╝██║  ██║██╔══██╗██║     ██╔═══██╗██║╚══██╔══╝
+██║  ███╗█████╗  ██║     ███████║██║  ██║██║     ██║   ██║██║   ██║
+██║   ██║██╔══╝  ██║     ██╔══██║██║  ██║██║     ██║   ██║██║   ██║
+╚██████╔╝███████╗╚██████╗██║  ██║██████╔╝███████╗╚██████╔╝██║   ██║
+ ╚═════╝ ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═════╝ ╚══════╝ ╚═════╝ ╚═╝   ╚═╝
 
-# =====================================================================
-#  DeckPilot - Stream Deck Controller
-#  Copyright (C) 2025  Nils Schaetti
-#
-#  This program is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation, either version 3 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# =====================================================================
+DeckPilot - A customizable interface for your Stream Deck.
+Licensed under the GNU General Public License v3.0
 
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+Console logger utilities used by DeckPilot.
 """
 
 
@@ -37,8 +38,13 @@ install(show_locals=True)
 
 @dataclass(frozen=True)
 class LogEntry:
-    """
-    Structured information about a log message.
+    """Structured representation of a single log line.
+
+    Attributes:
+        level: Severity of the log entry.
+        label: Human-readable label for the level column.
+        source: Origin of the log (class/module name).
+        message: Rendered log message text.
     """
 
     level: "LogLevel"
@@ -49,9 +55,7 @@ class LogEntry:
 
 
 class LogFilterRule:
-    """
-    Represents a single AND-combined filtering rule.
-    """
+    """Single AND-combined rule used to filter log output."""
 
     _KEY_MAP = {
         "type": "level",
@@ -73,27 +77,55 @@ class LogFilterRule:
             message_pattern: Optional[re.Pattern[str]] = None,
             raw: str | None = None,
     ) -> None:
+        """Create a new filtering rule.
+
+        Args:
+            level_pattern: Compiled regex matched against the label/level text.
+            source_pattern: Compiled regex matched against the inferred source.
+            message_pattern: Compiled regex matched against the message body.
+            raw: Original specification string, preserved for display.
+
+        Raises:
+            ValueError: If no patterns are provided.
+        """
         if not any((level_pattern, source_pattern, message_pattern)):
             raise ValueError("A filter rule must declare at least one criterion")
+        # end if
         self.level_pattern = level_pattern
         self.source_pattern = source_pattern
         self.message_pattern = message_pattern
         self.raw = raw or ""
+    # end def __init__
 
-    # end __init__
     @classmethod
     def from_spec(cls, spec: str) -> "LogFilterRule":
-        """
-        Parse a CLI filter specification into a rule.
-        """
+        """Convert a CLI filter specification into a rule.
 
+        A specification is a comma/semicolon-separated list of key/value pairs
+        where keys map to one of ``level``, ``source``, or ``message``. Values
+        are interpreted as regular expressions (case-insensitive for level).
+
+        Args:
+            spec: Raw CLI filter specification, for example
+                ``"level=debug,source=my_module"``.
+
+        Returns:
+            LogFilterRule: A populated filter rule instance.
+
+        Raises:
+            ValueError: If the specification is empty, malformed, references an
+                unknown field, or contains an invalid regular expression.
+        """
         if not spec or not spec.strip():
             raise ValueError("Empty filter specification")
+        # end if
 
         tokens = [token.strip() for token in re.split(r"[;,]", spec) if token.strip()]
+
         if not tokens:
             raise ValueError("Filter specification contains no criteria")
-
+        # end if
+        
         kwargs: dict[str, re.Pattern[str]] = {}
         for token in tokens:
             if "=" in token:
@@ -102,15 +134,18 @@ class LogFilterRule:
                 key, value = token.split(":", 1)
             else:
                 raise ValueError(f"Invalid token '{token}'. Expected key=value pairs")
+            # end if
 
             key = key.strip().lower()
             field = cls._KEY_MAP.get(key)
             if field is None:
                 raise ValueError(f"Unknown filter field '{key}' in '{spec}'")
+            # end if
 
             value = value.strip()
             if not value:
                 raise ValueError(f"Missing regex for '{key}' in '{spec}'")
+            # end if
             try:
                 flags = re.IGNORECASE if field == "level" else 0
                 kwargs[field] = re.compile(value, flags)
@@ -125,19 +160,43 @@ class LogFilterRule:
             raw=spec,
         )
 
-    # end from_spec
+    # end def from_spec
     def matches(self, entry: LogEntry) -> bool:
-        """Return True if the entry satisfies this rule."""
+        """Check whether a log entry satisfies this rule.
 
+        Args:
+            entry: Log entry to evaluate.
+
+        Returns:
+            bool: True if the entry matches all configured criteria, otherwise
+            False.
+        """
         if self.level_pattern and not self.level_pattern.search(entry.label):
             return False
+        # end if
         if self.source_pattern and not self.source_pattern.search(entry.source):
             return False
+        # end if
         if self.message_pattern and not self.message_pattern.search(entry.message):
             return False
+        # end if
         return True
+    # end def matches
 
-    # end matches
+    def __str__(self) -> str:
+        """Return a readable representation of the rule."""
+        return (
+            f"<LogFilterRule: raw={self.raw}, level_pattern={self.level_pattern}, "
+            f"source_pattern={self.source_pattern}, message_pattern={self.message_pattern}>"
+        )
+    # end def __str__
+
+    def __repr__(self):
+        """Return the canonical representation for debugging."""
+        return self.__str__()
+    # end def __repr__
+
+# end class LogFilterRule
 
 
 class LogLevel(IntEnum):
@@ -150,12 +209,17 @@ class LogLevel(IntEnum):
     ERROR = 40
     CRITICAL = 50
 
-
 # end class LogLevel
+
+
 # Main logger
 class Logger:
-    """
-    Rich console logger tailored for DeckPilot output formatting.
+    """Rich console logger tailored for DeckPilot output formatting.
+
+    The Logger is implemented as a singleton to keep console configuration
+    consistent across DeckPilot commands. It supports structured filtering,
+    level-aware styling, and convenience helpers for common log types and
+    telemetry-like event entries.
     """
 
     # Singleton instance
@@ -178,11 +242,13 @@ class Logger:
             cls,
             level=LogLevel.INFO
     ):
-        """
-        Create a singleton instance of the Logger class.
-        
+        """Create (or return) the singleton Logger instance.
+
         Args:
-            level (Any): The logging level to use.
+            level: Default logging level for the new instance.
+
+        Returns:
+            Logger: The singleton logger.
         """
         if cls._instance is None:
             cls._instance = super().__new__(cls)
@@ -195,11 +261,10 @@ class Logger:
 
     @classmethod
     def inst(cls):
-        """
-        Get the singleton instance of the Logger class.
-        
+        """Return the singleton instance if it has been created.
+
         Returns:
-            Any: The singleton instance.
+            Logger | None: The logger instance or ``None`` if not yet built.
         """
         return cls._instance
 
@@ -208,11 +273,13 @@ class Logger:
             self,
             level: LogLevel
     ):
-        """
-        Set the logging level for the logger.
-        
+        """Update the minimum severity displayed by the logger.
+
         Args:
-            level (LogLevel): The logging level to set.
+            level: New minimum log level. Messages below this level are skipped.
+
+        Returns:
+            None
         """
         self._level = level
     # end def set_level
@@ -221,11 +288,17 @@ class Logger:
             self,
             specs: Optional[Sequence[str]]
     ):
-        """
-        Configure filtering rules for the logger.
+        """Configure include filters parsed from CLI-provided specs.
 
         Args:
-            specs (Sequence[str]): The filtering rules to configure.
+            specs: Optional list of rule specifications. If omitted or empty,
+                filtering is disabled.
+
+        Raises:
+            ValueError: If any specification is invalid.
+
+        Returns:
+            None
         """
         self._filters = []
         if not specs:
@@ -236,20 +309,19 @@ class Logger:
         for spec in specs:
             parsed.append(LogFilterRule.from_spec(spec))
         # end for
+
         self._filters = parsed
     # end def configure_filters
 
-    # end configure_filters
     def get_level(self):
-        """Get the current logging level.
-        
+        """Return the current minimum logging level.
+
         Returns:
-            Any: The current logging level.
+            LogLevel: Active minimum severity threshold.
         """
         return self._level
     # end def get_level
 
-    # end def get_level
     def _log(
             self,
             msg,
@@ -259,15 +331,17 @@ class Logger:
             label: Optional[str] = None,
             style: Optional[str] = None,
     ):
-        """
-        Log a message with the specified logging level.
-        
+        """Dispatch a log entry after applying level and filter checks.
+
         Args:
-            msg (Any): The message to log.
-            log_level (LogLevel): The logging level to use.
-            source (Optional[str]): The source of the message.
-            label (Optional[str]): The label of the message.
-            style (Optional[str]): The style of the message.
+            msg: Message content to render.
+            log_level: Severity of the message.
+            source: Optional source override; defaults to the caller class/module.
+            label: Optional label override for the level column.
+            style: Optional `rich` style string applied to the level column.
+
+        Returns:
+            None
         """
         if self._level > log_level:
             return
@@ -295,8 +369,10 @@ class Logger:
     # end def _log
 
     def _infer_source(self) -> str:
-        """
-        Infer the caller class/module for display and filtering.
+        """Infer the caller class or module name for display and filtering.
+
+        Returns:
+            str: Derived source name or ``"unknown"`` if it cannot be inferred.
         """
         frame = inspect.currentframe()
         try:
@@ -329,17 +405,32 @@ class Logger:
             label: str,
             style: Optional[str]
     ) -> str:
-        """Return a padded, optionally styled log-level column."""
+        """Return a padded, optionally styled log-level column.
+
+        Args:
+            label: Label text to display.
+            style: Optional `rich` style string.
+
+        Returns:
+            str: Styled label ready for console output.
+        """
 
         padded = f"{label:<{self._LEVEL_COL_WIDTH}}"
         if style:
             return f"[{style}]{padded}[/]"
+        # end if
         return padded
     # end def _format_level
 
     def _format_source(self, source: Optional[str]) -> str:
-        """Return a padded source column."""
+        """Return a padded source column.
 
+        Args:
+            source: Source text to display.
+
+        Returns:
+            str: Styled source column.
+        """
         text = (source or "")[:self._SOURCE_COL_WIDTH]
         padded = f"{text:<{self._SOURCE_COL_WIDTH}}"
         return f"[dim]{padded}[/]"
@@ -351,79 +442,105 @@ class Logger:
             *,
             source: Optional[str] = None
     ):
-        """
-        Log a debug message.
-        
+        """Log a debug message.
+
         Args:
-            msg (Any): The message to log.
+            msg: Message to emit.
+            source: Optional source override for display/filtering.
+
+        Returns:
+            None
         """
         self._log(msg, LogLevel.DEBUG, source=source)
     # end def debug
 
-    # end def debug
     def debugg(self, msg, *, source: Optional[str] = None):
-        """Log a debug message.
-        
+        """Log a very verbose debug message (below ``DEBUG``).
+
         Args:
-            msg (Any): The message to log.
+            msg: Message to emit.
+            source: Optional source override for display/filtering.
+
+        Returns:
+            None
         """
         self._log(msg, LogLevel.DEBUGG, source=source)
     # end def debugg
 
     def info(self, msg, *, source: Optional[str] = None):
         """Log an info message.
-        
+
         Args:
-            msg (Any): The message to log.
+            msg: Message to emit.
+            source: Optional source override for display/filtering.
+
+        Returns:
+            None
         """
         self._log(msg, LogLevel.INFO, source=source)
     # end def info
 
     def warning(self, msg, *, source: Optional[str] = None):
         """Log a warning message.
-        
+
         Args:
-            msg (Any): The message to log.
+            msg: Message to emit.
+            source: Optional source override for display/filtering.
+
+        Returns:
+            None
         """
         self._log(msg, LogLevel.WARNING, source=source)
     # end def warning
 
     def warningg(self, msg, *, source: Optional[str] = None):
-        """Log a warning message.
-        Warning messages are logged for errors that do not lead to program termination.
-        
+        """Log a secondary warning (finer-grained than ``warning``).
+
         Args:
-            msg (Any): The message to log.
+            msg: Message to emit.
+            source: Optional source override for display/filtering.
+
+        Returns:
+            None
         """
         self._log(msg, LogLevel.WARNING, source=source, label="WARNINGG")
 
     # end def warningg
     def error(self, msg, *, source: Optional[str] = None):
-        """Log an error message.
-        Error messages are logged for errors that do not lead to program termination.
-        
+        """Log an error that does not terminate the program.
+
         Args:
-            msg (Any): The message to log.
+            msg: Message to emit.
+            source: Optional source override for display/filtering.
+
+        Returns:
+            None
         """
         self._log(msg, LogLevel.ERROR, source=source)
 
     # end def error
     def critical(self, msg, *, source: Optional[str] = None):
-        """Log a critical message.
-        Critical messages are logged for errors that lead to program termination.
-        
+        """Log a critical error that typically leads to termination.
+
         Args:
-            msg (Any): The message to log.
+            msg: Message to emit.
+            source: Optional source override for display/filtering.
+
+        Returns:
+            None
         """
         self._log(msg, LogLevel.CRITICAL, source=source)
 
     # end def critical
     def fatal(self, msg, *, source: Optional[str] = None):
-        """Log a fatal message. This is an alias for critical.
-        Fatal messages are logged for error that leads to program termination.
-        
+        """Alias for ``critical``.
+
         Args:
-            msg (Any): The message to log.
+            msg: Message to emit.
+            source: Optional source override for display/filtering.
+
+        Returns:
+            None
         """
         self.critical(msg, source=source)
 
@@ -435,13 +552,16 @@ class Logger:
             event_name: str,
             **params
     ):
-        """Log an event with the specified parameters.
-        
+        """Log a structured event emitted by a DeckPilot component.
+
         Args:
-            class_name (str): The name of the class where the event occurred.
-            item_name (str): The name of the item associated with the event.
-            event_name (str): The name of the event.
-            params (Any): Optional dictionary of parameters associated with the event.
+            class_name: Name of the class where the event originated.
+            item_name: Logical item involved in the event.
+            event_name: Event identifier.
+            **params: Optional keyword parameters included in the message.
+
+        Returns:
+            None
         """
         if params is None:
             params = {}
@@ -489,29 +609,18 @@ def setup_logger(
         level: str = "INFO",
         filters: Optional[Sequence[str]] = None,
 ) -> Logger:
-    """
-    Setup the logger for the application
+    """Initialize and configure the global Logger instance.
 
     Args:
-    - level (str): The logging level to use
-    - filters (Sequence[str] | None): Optional filter specifications
+        level: Log level name (case-insensitive) to apply to the logger.
+        filters: Optional list of filter specifications to constrain output.
 
     Returns:
-    - Logger: The logger instance
+        Logger: The configured logger instance.
     """
+    print(f"filter: {filters}")
     logger = Logger()
     logger.set_level(getattr(LogLevel, level.upper(), LogLevel.INFO))
     logger.configure_filters(filters)
     return logger
 # end def setup_logger
-
-
-# end def setup_logger
-# def get_logger() -> logging.Logger:
-#     """
-#     Get the logger instance.
-#
-#     :return: logging.Logger instance
-#     """
-#     return logging.getLogger("deckpilot")
-# # end get_logger
