@@ -115,6 +115,8 @@ class PluginContext:
     deck_manager: "DeckManager"
     global_config: Dict[str, Any]
 
+# end class PluginContext
+
 
 class BasePlugin:
     """

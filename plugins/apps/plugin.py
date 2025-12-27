@@ -9,3 +9,6 @@ class AppsPlugin(BasePlugin):
 
     def register(self) -> None:
         Logger.inst().info("AppsPlugin registered: panel mounted via metadata")
+    # end def register
+
+# end class AppsPlugin

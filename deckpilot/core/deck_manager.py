@@ -3,14 +3,25 @@
 
 
 # Imports
+import json
 import logging
 import signal
-import time
+import socket
 import threading
+import time
 
 # Import the DeviceManager from the simulator or the real hardware
 from deckpilot.utils import Logger
 from deckpilot.comm import event_bus, EventType, context
+from deckpilot.comm.external_commands import (
+    DEFAULT_COMMAND_HOST,
+    DEFAULT_COMMAND_PORT,
+    EchoCommand,
+    ExternalCommandMessage,
+    PongResponse,
+    PushAckResponse,
+    PushCommand,
+)
 from .deck_renderer import DeckRenderer
 
 
@@ -57,6 +68,9 @@ class DeckManager:
 
         # Callbacks
         self._key_change_callbacks = list()
+        self._command_server: socket.socket | None = None
+        self._command_host = DEFAULT_COMMAND_HOST
+        self._command_port = DEFAULT_COMMAND_PORT
 
     # end def __init__
 
@@ -147,8 +161,8 @@ class DeckManager:
 
         # Log
         Logger().inst().info(f"Selected StreamDeck {self._deck} initialized.")
-
     # end def init_deck
+
     # Main
     def main(
             self,
@@ -209,6 +223,10 @@ class DeckManager:
                 ).start()
 
             # end if
+
+            # Start external command socket
+            self._start_external_command_listener()
+
             # Start the key event listener
             for t in threading.enumerate():
                 try:
@@ -218,7 +236,6 @@ class DeckManager:
             # end for
         else:
             Logger().inst().info("ERROR: No visual StreamDeck found!")
-
         # end if
     # end def main
     
@@ -237,8 +254,146 @@ class DeckManager:
         """
         # Log
         Logger().inst().info(f"Deck {deck.id()} Key {key} = {state}")
-
     # end def _update_key_image
+
+    def _start_external_command_listener(self) -> None:
+        """Launch the socket listener for external commands."""
+        if self._command_server is not None:
+            return
+        # end if
+        try:
+            server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            server.bind((self._command_host, self._command_port))
+            server.listen()
+        except OSError as exc:
+            Logger().inst().error(f"Failed to start external command socket: {exc}")
+            return
+        # end try
+        self._command_server = server
+        threading.Thread(
+            target=self._accept_external_commands,
+            daemon=True
+        ).start()
+        Logger().inst().info(
+            f"Listening for external commands on {self._command_host}:{self._command_port}"
+        )
+    # end def _start_external_command_listener
+
+    def _accept_external_commands(self) -> None:
+        """Accept incoming socket connections."""
+        while self._command_server:
+            try:
+                client, address = self._command_server.accept()
+            except OSError:
+                break
+            # end try
+            threading.Thread(
+                target=self._handle_external_client,
+                args=(client, address),
+                daemon=True
+            ).start()
+        # end while
+    # end def _accept_external_commands
+
+    def _handle_external_client(self, client: socket.socket, address) -> None:
+        """Handle an external command client connection."""
+        with client:
+            try:
+                raw_text = self._recv_line(client)
+            except OSError:
+                return
+            # end try
+            if not raw_text:
+                return
+            # end if
+            try:
+                payload = json.loads(raw_text)
+            except json.JSONDecodeError as exc:
+                Logger().inst().warning(f"Invalid JSON from {address}: {exc}")
+                return
+            # end try
+            try:
+                message = ExternalCommandMessage.from_dict(payload)
+            except ValueError as exc:
+                Logger().inst().warning(f"Invalid external command from {address}: {exc}")
+                return
+            # end try
+            response = self._build_external_response(message)
+            if response is not None:
+                try:
+                    client.sendall((response.to_json() + "\n").encode("utf-8"))
+                except OSError as exc:
+                    Logger().inst().warning(f"Failed to send response to {address}: {exc}")
+            # end if
+        # end with
+    # end def _handle_external_client
+
+    @staticmethod
+    def _recv_line(sock: socket.socket) -> str:
+        """Read a single newline-terminated line from the socket."""
+        buffer = bytearray()
+        while True:
+            chunk = sock.recv(4096)
+            if not chunk:
+                break
+            buffer.extend(chunk)
+            if b"\n" in chunk:
+                break
+        if not buffer:
+            return ""
+        line, *_ = buffer.split(b"\n", 1)
+        return line.decode("utf-8").strip()
+    # end def _recv_line
+
+    def _build_external_response(self, message: ExternalCommandMessage) -> ExternalCommandMessage | None:
+        """Return a response for well-known command types."""
+        if isinstance(message, EchoCommand):
+            return PongResponse(echo=message.payload.get("message"))
+        # end if
+        if isinstance(message, PushCommand):
+            success, error = self._handle_push_command(message)
+            return PushAckResponse(
+                key=message.key,
+                duration=message.duration,
+                success=success,
+                error=error
+            )
+        return None
+    # end def _build_external_response
+
+    def _handle_push_command(self, command: PushCommand) -> tuple[bool, str | None]:
+        """Schedule a simulated key press."""
+        deck = self.deck
+        if deck is None:
+            return False, "Stream Deck not initialized"
+        try:
+            key_count = deck.key_count()
+        except Exception as exc:
+            Logger().inst().error(f"Unable to get key count: {exc}")
+            return False, "Unable to determine key count"
+        if command.key >= key_count:
+            return False, f"Key {command.key} out of range (max {key_count - 1})"
+
+        threading.Thread(
+            target=self._simulate_key_press,
+            args=(command.key, command.duration),
+            daemon=True
+        ).start()
+        return True, None
+    # end def _handle_push_command
+
+    def _simulate_key_press(self, key: int, duration: float) -> None:
+        """Trigger a key press/release pair for the specified duration."""
+        Logger().inst().info(f"Simulating key #{key} press for {duration} seconds")
+        try:
+            self._key_change_callback(self.deck, key, True)
+            time.sleep(duration)
+            self._key_change_callback(self.deck, key, False)
+        except Exception as exc:
+            Logger().inst().error(f"Failed to simulate key press: {exc}")
+    # end def _simulate_key_press
+
     # endregion PRIVATE
 
     # region EVENTS
@@ -264,9 +419,9 @@ class DeckManager:
 
             time_i += 1
             time_count += interval
-
         # end while
     # end def _send_periodic_event
+
     # Callback for periodic event
     def _send_hidden_periodic_event(self, interval: int):
         """Callback for periodic event
@@ -287,9 +442,9 @@ class DeckManager:
 
             time_i += 1
             time_count += interval
-
         # end while
     # end def _send_hidden_periodic_event
+
     # Callback for state change of a key
     def _key_change_callback(self, deck, key, state):
         """
@@ -305,8 +460,8 @@ class DeckManager:
 
         # Publish the key change event
         event_bus.publish(EventType.KEY_CHANGED, (deck, key, state))
-
     # end def _key_change_callback
+
     # Signal handler
     def _signal_handler(self, sig, frame):
         """
@@ -314,6 +469,12 @@ class DeckManager:
         """
         # Send the exit event
         event_bus.publish(EventType.EXIT, ())
+        if self._command_server:
+            try:
+                self._command_server.close()
+            except OSError:
+                pass
+            self._command_server = None
 
         # Close the StreamDeck
         Logger().inst().info(f"Closing StreamDeck {self._deck.get_serial_number()}...")
@@ -323,8 +484,8 @@ class DeckManager:
         # Log
         Logger().inst().info("Exiting...")
         exit(0)
-
     # end def _signal_handler
+
     # endregion EVENTS
 
 

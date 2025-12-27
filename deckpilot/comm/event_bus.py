@@ -17,6 +17,7 @@ class EventType(str, Enum):
     INITIALIZED = "initialized"
     CLOCK_TICK = "clock/tick"
     INTERNAL_CLOCK_TICK = "internal/clock/tick"
+    EXTERNAL_COMMAND = "external/command"
     # keys events
     KEY_CHANGED = "key/changed"
     KEY_PRESSED = "key/pressed"
@@ -33,6 +34,7 @@ class EventType(str, Enum):
     PANEL_NEXT_PAGE = "panel/page/next"
     PANEL_PREVIOUS_PAGE = "panel/page/previous"
     PANEL_PARENT = "panel/parent"
+# class EventType
 
 
 # end class EventType

@@ -24,13 +24,12 @@ GNU General Public License for more details.
 Plugin discovery and lifecycle management.
 """
 
+# Imports
 from __future__ import annotations
-
 import importlib
 import sys
 from pathlib import Path
 from typing import List, Optional
-
 import yaml
 
 from deckpilot.comm import event_bus
@@ -91,7 +90,9 @@ class PluginManager:
             return
         # end if
 
+        # For each file
         for plugin_dir in sorted(self._plugins_root.iterdir()):
+            # Path to manifest
             manifest = plugin_dir / "plugin.yaml"
 
             # Ignore non-directory, ot not plugin.yaml
@@ -189,6 +190,9 @@ class PluginManager:
     # end def _resolve_entry_point
 
     def _mount_panels(self, plugin: BasePlugin, metadata: PluginMetadata, plugin_dir: Path) -> None:
+        """
+        Mount the plugin's panels.
+        """
         for panel_def in metadata.panels:
             mount_target = self._get_mount_target(panel_def.mount)
 
@@ -207,6 +211,7 @@ class PluginManager:
                 continue
             # end if
 
+            # If no class is specified, take the default Panel one
             panel_class = self._resolve_entry_point(panel_def.class_path) if panel_def.class_path else Panel
             panel_instance = panel_class(
                 name=panel_def.name,
@@ -214,7 +219,7 @@ class PluginManager:
                 renderer=mount_target.renderer,
                 parent=mount_target,
                 active=False,
-                **panel_def.params,
+                **panel_def.params
             )
 
             mount_target.add_child(panel_instance.name, panel_instance)

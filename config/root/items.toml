@@ -11,61 +11,16 @@ path = "button_02.py"
 type = "button"
 
 [[items]]
-name = "button_03"
-path = "button_03.py"
-type = "button"
+name = "apps"
+type = "plugin"
+plugin = "apps"
 
 [[items]]
-name = "button_04"
-path = "button_04.py"
-type = "button"
+name = "obs"
+type = "plugin"
+plugin = "obs"
 
 [[items]]
-name = "button_05"
-path = "button_05.py"
-type = "button"
-
-[[items]]
-name = "button_06"
-path = "button_06.py"
-type = "button"
-
-[[items]]
-name = "button_07"
-path = "button_07.py"
-type = "button"
-
-[[items]]
-name = "button_08"
-path = "button_08.py"
-type = "button"
-
-[[items]]
-name = "button_09"
-path = "button_09.py"
-type = "button"
-
-[[items]]
-name = "button_10"
-path = "button_10.py"
-type = "button"
-
-[[items]]
-name = "button_11"
-path = "button_11.py"
-type = "button"
-
-[[items]]
-name = "button_12"
-path = "button_12.py"
-type = "button"
-
-[[items]]
-name = "button_13"
-path = "button_13.py"
-type = "button"
-
-[[items]]
-name = "button_14"
-path = "button_14.py"
-type = "button"
+name = "pomodoro"
+type = "plugin"
+plugin = "pomodoro"

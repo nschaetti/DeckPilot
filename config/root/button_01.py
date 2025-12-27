@@ -72,6 +72,22 @@ class Button01(Button):
         return super().on_item_released(key_index)
     # end on_item_released
 
+    # On item pressed
+    def on_item_pressed(self, key_index) -> Optional[KeyDisplay]:
+        """
+        Event handler for when the item is pressed.
+
+        Args:
+            key_index (int): Index of the key that was pressed.
+
+        Returns:
+            KeyDisplay: KeyDisplay object.
+        """
+        Logger.inst().info(f"{self.__class__.__name__} {self.name} pressed.")
+        self.parent.dispatch(source=self, data={'message': "Hello World!"})
+        return super().on_item_pressed(key_index)
+    # end def on_item_pressed
+
     # endregion EVENTS
 
 # end Button01

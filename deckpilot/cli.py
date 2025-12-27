@@ -28,6 +28,8 @@ from getpass import fallback_getpass
 from typing import Tuple, Any, Dict, Optional, Sequence
 
 # Imports
+import json
+import socket
 import signal
 import threading
 from contextlib import contextmanager, suppress
@@ -35,7 +37,9 @@ from pathlib import Path
 
 import toml
 import typer
+import yaml
 from rich.console import Console
+from rich.pretty import Pretty
 from rich.table import Table
 from rich.traceback import install
 
@@ -43,7 +47,15 @@ from deckpilot.utils import setup_logger, Logger
 from deckpilot.elements import PanelRegistry
 from deckpilot.core import DeckManager, AssetManager
 from deckpilot.comm import context
+from deckpilot.comm.external_commands import (
+    DEFAULT_COMMAND_HOST,
+    DEFAULT_COMMAND_PORT,
+    EchoCommand,
+    ExternalCommandMessage,
+    PushCommand,
+)
 from deckpilot.plugins import PluginManager
+from deckpilot.plugins.base import PluginMetadata
 
 
 # Install rich traceback
@@ -53,6 +65,16 @@ install(show_locals=True)
 # New app
 app = typer.Typer()
 console = Console()
+
+DEFAULT_CONFIG_PATH = Path.home() / ".config" / "deckpilot" / "config.toml"
+DEFAULT_PLUGIN_DIR = Path.home() / ".config" / "deckpilot" / "plugins"
+config_app = typer.Typer(
+    help="Inspect and modify DeckPilot configuration files.",
+    invoke_without_command=True
+)
+app.add_typer(config_app, name="config")
+shell_app = typer.Typer(help="Send commands to DeckPilot's external control socket.")
+app.add_typer(shell_app, name="shell")
 
 
 def _build_logger(
@@ -280,10 +302,169 @@ def _format_bool(value: bool) -> str:
 # end def _format_bool
 
 
+def _ensure_config_path(config_path: Path, is_default: bool) -> Path:
+    """Validate that a configuration file exists before accessing it."""
+    if config_path.exists():
+        return config_path
+    # end if
+    if is_default:
+        console.print(f"[red]Default configuration file not found: {config_path}[/red]")
+        raise typer.Exit(code=1)
+    # end if
+    raise typer.BadParameter(
+        message=f"Configuration file '{config_path}' not found.",
+        param_hint="--path"
+    )
+# end def _ensure_config_path
+
+
+def _config_path_from_ctx(
+        ctx: typer.Context,
+        override: Optional[Path]
+) -> tuple[Path, bool]:
+    if override is not None:
+        return override, False
+    # end if
+    if ctx.obj and "config_path" in ctx.obj:
+        return ctx.obj["config_path"], ctx.obj.get("is_default_path", True)
+    # end if
+    return DEFAULT_CONFIG_PATH, True
+# end def _config_path_from_ctx
+
+
+def _print_config(config_path: Path) -> None:
+    """Pretty-print a configuration file."""
+    config = load_config(config_path)
+    console.print(f"[bold]Configuration file:[/bold] {config_path}")
+    console.print(Pretty(config, expand_all=True))
+# end def _print_config
+
+
+def _split_key_path(key_path: str) -> list[str]:
+    parts = [segment.strip() for segment in key_path.split(".") if segment.strip()]
+    if not parts:
+        raise typer.BadParameter("Configuration key cannot be empty.", param_hint="key")
+    # end if
+    return parts
+# end def _split_key_path
+
+
+def _get_nested_value(config: dict, key_path: list[str]):
+    current = config
+    for key in key_path:
+        if not isinstance(current, dict) or key not in current:
+            raise KeyError(key)
+        # end if
+        current = current[key]
+    # end for
+    return current
+# end def _get_nested_value
+
+
+def _get_parent_and_key(config: dict, key_path: list[str]) -> tuple[dict, str]:
+    if len(key_path) == 1:
+        return config, key_path[0]
+    # end if
+    parent = _get_nested_value(config, key_path[:-1])
+    if not isinstance(parent, dict):
+        raise KeyError(key_path[-1])
+    # end if
+    return parent, key_path[-1]
+# end def _get_parent_and_key
+
+
+def _coerce_value(raw_value: str, reference_value: Any):
+    if isinstance(reference_value, bool):
+        lowered = raw_value.lower()
+        if lowered in {"true", "1", "yes", "on"}:
+            return True
+        if lowered in {"false", "0", "no", "off"}:
+            return False
+        raise typer.BadParameter(
+            message=f"Cannot convert '{raw_value}' to boolean.",
+            param_hint="value"
+        )
+    if isinstance(reference_value, int) and not isinstance(reference_value, bool):
+        try:
+            return int(raw_value)
+        except ValueError as exc:
+            raise typer.BadParameter(
+                message=f"Cannot convert '{raw_value}' to integer.",
+                param_hint="value"
+            ) from exc
+    if isinstance(reference_value, float):
+        try:
+            return float(raw_value)
+        except ValueError as exc:
+            raise typer.BadParameter(
+                message=f"Cannot convert '{raw_value}' to float.",
+                param_hint="value"
+            ) from exc
+    if isinstance(reference_value, (list, dict)):
+        raise typer.BadParameter(
+            message="Editing list or table values via CLI is not supported.",
+            param_hint="value"
+        )
+    return raw_value
+# end def _coerce_value
+
+
+def _load_plugin_metadata(manifest: Path) -> PluginMetadata:
+    """Read plugin metadata from a manifest file."""
+    with manifest.open("r", encoding="utf-8") as fh:
+        payload = yaml.safe_load(fh) or {}
+    # end with
+    return PluginMetadata.from_dict(payload)
+# end def _load_plugin_metadata
+
+
+def _send_external_command(
+        command: ExternalCommandMessage,
+        host: str,
+        port: int,
+        timeout: float = 5.0
+) -> dict[str, Any]:
+    """Send an external command message and return the parsed JSON response."""
+    payload = (command.to_json() + "\n").encode("utf-8")
+    try:
+        with socket.create_connection((host, port), timeout=timeout) as conn:
+            conn.sendall(payload)
+            raw_response = _receive_line(conn)
+    except OSError as exc:
+        raise RuntimeError(f"Unable to reach DeckPilot at {host}:{port}: {exc}") from exc
+    if not raw_response:
+        raise RuntimeError("Connection closed without a response.")
+    try:
+        return json.loads(raw_response)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"Invalid JSON response: {exc}") from exc
+# end def _send_external_command
+
+
+def _receive_line(sock: socket.socket) -> str:
+    """Read a single newline-terminated line from the socket."""
+    buffer = bytearray()
+    while True:
+        chunk = sock.recv(4096)
+        if not chunk:
+            break
+        buffer.extend(chunk)
+        if b"\n" in chunk:
+            break
+    if not buffer:
+        return ""
+    line, *_ = buffer.split(b"\n", 1)
+    return line.decode("utf-8").strip()
+# end def _receive_line
+
+
 # end def setup_asset_manager
 @app.command()
 def start(
-        config: Path = typer.Option(help="Chemin vers le fichier de configuration."),
+        config: Path = typer.Option(
+            DEFAULT_CONFIG_PATH,
+            help="Chemin vers le fichier de configuration."
+        ),
         root: Path = typer.Option("config/root", help="Chemin vers le panneau racine."),
         log_level: str = typer.Option("INFO", help="Niveau de logging : DEBUG, INFO, WARNING, ERROR"),
         log_filter: list[str] = typer.Option(
@@ -479,6 +660,229 @@ def devices(
 
     console.print(table)
 # end def devices
+
+
+@app.command()
+def plugins(
+        path: Path = typer.Option(
+            DEFAULT_PLUGIN_DIR,
+            "--path",
+            "-p",
+            help=f"Directory containing DeckPilot plugins. Defaults to {DEFAULT_PLUGIN_DIR}",
+        ),
+) -> None:
+    """Display the list of plugins located in the given directory."""
+    plugins_root = Path(path).expanduser()
+    if not plugins_root.exists():
+        console.print(f"[red]Plugin directory {plugins_root} does not exist.[/red]")
+        raise typer.Exit(code=1)
+    # end if
+
+    discovered: list[tuple[PluginMetadata, Path]] = []
+    skipped: list[str] = []
+    for entry in sorted(plugins_root.iterdir()):
+        if not entry.is_dir():
+            continue
+        # end if
+        manifest = entry / "plugin.yaml"
+        if not manifest.exists():
+            skipped.append(entry.name)
+            continue
+        # end if
+        try:
+            metadata = _load_plugin_metadata(manifest)
+        except Exception as exc:  # pragma: no cover - CLI feedback only
+            console.print(f"[red]Failed to load {manifest}: {exc}[/red]")
+            continue
+        # end try
+        discovered.append((metadata, entry))
+    # end for
+
+    if not discovered:
+        console.print(f"[yellow]No plugins found in {plugins_root}.[/yellow]")
+    else:
+        table = Table(title=f"Plugins in {plugins_root}")
+        table.add_column("Name", style="bold")
+        table.add_column("Version", style="cyan")
+        table.add_column("Entry Point")
+        table.add_column("Directory")
+        table.add_column("Description")
+        for metadata, directory in discovered:
+            table.add_row(
+                metadata.name,
+                metadata.version,
+                metadata.entry_point,
+                str(directory),
+                metadata.description or "N/A",
+            )
+        console.print(table)
+    # end if
+
+    if skipped:
+        skipped_dirs = ", ".join(sorted(skipped))
+        console.print(f"[yellow]Skipped directories without plugin.yaml: {skipped_dirs}[/yellow]")
+    # end if
+# end def plugins
+
+
+@shell_app.command("echo")
+def shell_echo(
+        message: str = typer.Argument(
+            "PING",
+            help="Message to send with the echo command."
+        ),
+        host: str = typer.Option(
+            DEFAULT_COMMAND_HOST,
+            "--host",
+            help=f"Host for the DeckPilot command socket (default: {DEFAULT_COMMAND_HOST})."
+        ),
+        port: int = typer.Option(
+            DEFAULT_COMMAND_PORT,
+            "--port",
+            help=f"Port for the DeckPilot command socket (default: {DEFAULT_COMMAND_PORT})."
+        ),
+) -> None:
+    """Send an ECHO external command to the DeckPilot socket."""
+    cmd = EchoCommand(message=message)
+    try:
+        response_payload = _send_external_command(cmd, host, port)
+    except RuntimeError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1)
+    response = ExternalCommandMessage.from_dict(response_payload)
+    console.print(Pretty(response.to_dict(), expand_all=True))
+# end def shell_echo
+
+
+@shell_app.command("push")
+def shell_push(
+        key: int = typer.Argument(
+            ...,
+            help="Key index to simulate."
+        ),
+        duration: float = typer.Option(
+            2.0,
+            "--duration",
+            "-d",
+            help="Duration in seconds to hold the key before releasing."
+        ),
+        host: str = typer.Option(
+            DEFAULT_COMMAND_HOST,
+            "--host",
+            help=f"Host for the DeckPilot command socket (default: {DEFAULT_COMMAND_HOST})."
+        ),
+        port: int = typer.Option(
+            DEFAULT_COMMAND_PORT,
+            "--port",
+            help=f"Port for the DeckPilot command socket (default: {DEFAULT_COMMAND_PORT})."
+        ),
+) -> None:
+    """Simulate a key press via the DeckPilot external command socket."""
+    if key < 0:
+        raise typer.BadParameter("Key index must be >= 0.", param_hint="key")
+    if duration <= 0:
+        raise typer.BadParameter("Duration must be greater than 0.", param_hint="--duration")
+    cmd = PushCommand(key=key, duration=duration)
+    try:
+        response_payload = _send_external_command(cmd, host, port)
+    except RuntimeError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1)
+    response = ExternalCommandMessage.from_dict(response_payload)
+    console.print(Pretty(response.to_dict(), expand_all=True))
+# end def shell_push
+
+
+@config_app.callback()
+def config_main(
+        ctx: typer.Context,
+        path: Optional[Path] = typer.Option(
+            None,
+            "--path",
+            "-p",
+            help=f"Configuration file to display. Defaults to {DEFAULT_CONFIG_PATH}",
+            show_default=False,
+        ),
+) -> None:
+    """Display the configuration when invoked without a subcommand."""
+    config_path = path or DEFAULT_CONFIG_PATH
+    ctx.obj = {
+        "config_path": config_path,
+        "is_default_path": path is None
+    }
+    if ctx.invoked_subcommand:
+        return
+    # end if
+    resolved = _ensure_config_path(config_path, path is None)
+    _print_config(resolved)
+# end def config_main
+
+
+@config_app.command("get")
+def config_get(
+        ctx: typer.Context,
+        key: str = typer.Argument(..., help="Dotted path to the configuration value (ex: streamdeck.brightness)."),
+        path: Optional[Path] = typer.Option(
+            None,
+            "--path",
+            "-p",
+            help=f"Configuration file to inspect. Defaults to {DEFAULT_CONFIG_PATH}",
+            show_default=False,
+        ),
+) -> None:
+    """Get the value of a configuration entry."""
+    config_path, is_default = _config_path_from_ctx(ctx, path)
+    resolved = _ensure_config_path(config_path, is_default)
+    config = load_config(resolved)
+    key_path = _split_key_path(key)
+    try:
+        value = _get_nested_value(config, key_path)
+    except KeyError as exc:
+        raise typer.BadParameter(
+            message=f"Configuration key '{key}' not found.",
+            param_hint="key"
+        ) from exc
+    console.print(Pretty(value, expand_all=True))
+# end def config_get
+
+
+@config_app.command("set")
+def config_set(
+        ctx: typer.Context,
+        key: str = typer.Argument(..., help="Dotted path to the configuration value to change."),
+        value: str = typer.Argument(..., help="New value (converted to the current type when possible)."),
+        path: Optional[Path] = typer.Option(
+            None,
+            "--path",
+            "-p",
+            help=f"Configuration file to edit. Defaults to {DEFAULT_CONFIG_PATH}",
+            show_default=False,
+        ),
+) -> None:
+    """Set the value of a configuration entry."""
+    config_path, is_default = _config_path_from_ctx(ctx, path)
+    resolved = _ensure_config_path(config_path, is_default)
+    config = load_config(resolved)
+    key_path = _split_key_path(key)
+    try:
+        parent, final_key = _get_parent_and_key(config, key_path)
+    except KeyError as exc:
+        raise typer.BadParameter(
+            message=f"Configuration key '{key}' not found.",
+            param_hint="key"
+        ) from exc
+    if final_key not in parent:
+        raise typer.BadParameter(
+            message=f"Configuration key '{key}' not found.",
+            param_hint="key"
+        )
+    reference_value = parent[final_key]
+    coerced_value = _coerce_value(value, reference_value)
+    parent[final_key] = coerced_value
+    with resolved.open("w", encoding="utf-8") as fp:
+        toml.dump(config, fp)
+    console.print(f"[green]Updated[/green] {key} = {coerced_value!r} in {resolved}")
+# end def config_set
 
 
 @app.command()

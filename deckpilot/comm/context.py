@@ -24,8 +24,8 @@ class Context:
             cls._instance._objects = {}
         # end if
         return cls._instance
-
     # end def __new__
+
     # region PROPERTIES
 
     @property
@@ -33,36 +33,36 @@ class Context:
         """Get the active panel.
         """
         return self.get("active_panel")
-
     # end def active_panel
+
     @property
     def config(self):
         """Get the configuration.
         """
         return self._objects.get("config", None)
-
     # end def config
+
     @property
     def deck_manager(self):
         """Get the DeckManager.
         """
         return self.get("deck_manager")
-
     # end def deck_manager
+
     @property
     def panel_registry(self):
         """Get the PanelRegistry.
         """
         return self.get("panel_registry")
-
     # end def panel_registry
+
     @property
     def asset_manager(self):
         """Get the AssetManager.
         """
         return self.get("asset_manager")
-
     # end def asset_manager
+
     # endregion PROPERTIES
 
     # region PUBLIC
@@ -75,8 +75,8 @@ class Context:
         """
         Logger.inst().debug(f"Context: set active panel: {panel}")
         self.register("active_panel", panel)
-
     # end def set_active_panel
+
     def register(self, key, obj):
         """Register an object with a key.
         
@@ -85,8 +85,8 @@ class Context:
             obj (Any): Description.
         """
         self._objects[key] = obj
-
     # end def register
+
     def get(self, key):
         """Get an object by its key.
         
@@ -94,8 +94,8 @@ class Context:
             key (Any): Description.
         """
         return self._objects.get(key)
-
     # end def get
+
     def unregister(self, key):
         """Unregister an object by its key.
         
@@ -103,13 +103,12 @@ class Context:
             key (Any): Description.
         """
         self._objects.pop(key, None)
-
     # end def unregister
+
     # endregion PUBLIC
 
-
-
 # end class Context
+
 # Global registry instance
 context = Context()
 
